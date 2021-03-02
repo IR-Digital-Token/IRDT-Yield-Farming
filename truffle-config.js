@@ -43,4 +43,7 @@ module.exports = {
     compilers: {
         solc: {}
     }
+    ,
+    contracts_directory: "./src/contracts/",
+    contracts_build_directory: "./src/abis/"
 };
