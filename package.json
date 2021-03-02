@@ -35,8 +35,9 @@
     "node-sass": "^4.12.0",
     "prettier": "^1.19.1",
     "sass-loader": "^8.0.2",
+    "truffle": "^5.2.0",
+    "truffle-hdwallet-provider": "^1.0.17",
     "typescript": "~3.9.3",
-    "vue-template-compiler": "^2.6.11",
-    "truffle": "^5.2.0"
+    "vue-template-compiler": "^2.6.11"
   }
 }
