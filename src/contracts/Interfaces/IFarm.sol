@@ -2,7 +2,7 @@ pragma solidity >=0.4.22 <0.9.0;
 
 interface IStakingRewards {
     // Mutative
-    function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 duration, bool refferalEnable, uint256 referalPercent) external;
+    function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool refferalEnable, uint256 referalPercent) external;
 
     function stake(uint256 planIndex, uint256 amount, uint256 referrer) external;
 
