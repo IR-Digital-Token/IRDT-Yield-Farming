@@ -4,6 +4,7 @@ import pprint
 norm_start_time = 50
 norm_duration = 100
 test_1 = {
+    'name': 'A Normal Test With Just One Stoker',
     'reward_amount': 2000,
     'start_time': norm_start_time,
     'duration': norm_duration,
