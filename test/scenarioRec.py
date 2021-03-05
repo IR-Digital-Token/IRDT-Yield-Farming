@@ -1,4 +1,4 @@
-from scenarioGen import Plan, User, forwardTime
+from scenarioGen import Plan, User, Env
 import pprint
 
 norm_reward_amount = 2000.0
@@ -112,12 +112,13 @@ tests = [
 
 
 def fill_stake_amounts(scenario):
+    Env.reset()
     plan = Plan(scenario['reward_amount'], scenario['start_time'], scenario['duration'],
                 scenario['referral_enable'], scenario['referral_percent'])
     users = []
     before_time = 0
     for time in scenario['times']:
-        forwardTime(time['time'] - before_time)
+        Env.forwardTime(time['time'] - before_time)
         if time['is_stake']:
             users.append(User(plan, time['stake_amount'], referrerID=0))
         else:

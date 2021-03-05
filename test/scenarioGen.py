@@ -1,10 +1,14 @@
 integral = []
-envTime = 0
 
+class Env:
+    envTime = 0
 
-def forwardTime(amount):
-    global envTime
-    envTime += amount
+    @staticmethod
+    def forwardTime(amount):
+        Env.envTime += amount
+    @staticmethod
+    def reset():
+        Env.envTime = 0
 
 
 class Plan:
@@ -27,7 +31,6 @@ class Plan:
 class User:
 
     def __init__(self, plan, entryAmount, referrerID):
-        global envTime
         self.refs = 0
         if plan.referralEnable:
             flag = False
@@ -40,24 +43,23 @@ class User:
             self.refs = referrerID
 
         if plan.currentId == 1:
-            plan.actualStart = envTime
+            plan.actualStart = Env.envTime
         self.id = plan.currentId
         plan.currentId += 1
         plan.totalEntry += entryAmount
-        self.enterTime = envTime
+        self.enterTime = Env.envTime
         self.entryAmount = entryAmount
-        plan.currentArea += (envTime - plan.lastEntry) * plan.lastPercent
+        plan.currentArea += (Env.envTime - plan.lastEntry) * plan.lastPercent
         self.enterArea = plan.currentArea
         plan.lastPercent = plan.rewardAmount / ((plan.duration - (plan.actualStart - plan.startTime)) * plan.totalEntry)
         # print(plan.rewardAmount / ((plan.duration - (plan.actualStart - plan.startTime)) * plan.totalEntry))
-        plan.lastEntry = envTime
+        plan.lastEntry = Env.envTime
         plan.Users.append(self)
 
     def unStake(self, plan):
-        global envTime
-        nowTime = envTime
+        nowTime = Env.envTime
         plan.totalEntry -= self.entryAmount
-        if envTime > plan.startTime + plan.duration:
+        if Env.envTime > plan.startTime + plan.duration:
             nowTime = plan.startTime + plan.duration
 
         plan.currentArea += (nowTime - plan.lastEntry) * plan.lastPercent
