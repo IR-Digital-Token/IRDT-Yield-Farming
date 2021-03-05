@@ -9,20 +9,111 @@ function tokens(n) {
     return web3.utils.toWei(n, "ether");
 }
 
-
+let norm_reward_amount = 2000.0
 let norm_start_time = 50
 let norm_duration = 100
+let delta_t = 2
 let testCases = [
     {
         'name': 'A Normal Test With Just One Stoker',
-        'reward_amount': 2000,
+        'reward_amount': norm_reward_amount,
         'start_time': norm_start_time,
         'duration': norm_duration,
         'times': [
-            {'time': norm_start_time, 'is_stake': True, 'stake_amount': 1000},
-            {'time': (norm_start_time + norm_duration), 'is_stake': False, 'unstake_num': 1, 'unstake_amount': 2000.0}
+            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 1000},
+            {
+                'time': (norm_start_time + norm_duration),
+                'is_stake': false,
+                'unstake_num': 1,
+                'unstake_amount': norm_reward_amount
+            }
         ],
-        'referral_enable': False,
+        'referral_enable': false,
+        'referral_percent': 0,
+    },
+    {
+        'name': 'A Normal Test With Just One Stoker',
+        'reward_amount': norm_reward_amount,
+        'start_time': norm_start_time,
+        'duration': norm_duration,
+        'times': [
+            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 1000},
+            {
+                'time': (norm_start_time + norm_duration + delta_t),
+                'is_stake': false,
+                'unstake_num': 1,
+                'unstake_amount': norm_reward_amount
+            }
+        ],
+        'referral_enable': false,
+        'referral_percent': 0,
+    },
+    {
+        'name': 'A Test With Three Stokers',
+        'reward_amount': norm_reward_amount,
+        'start_time': norm_start_time,
+        'duration': norm_duration,
+        'times': [
+            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 1000},
+            {'time': norm_start_time + 0.2 * norm_duration, 'is_stake': true, 'stake_amount': 2000},
+            {'time': norm_start_time + 0.4 * norm_duration, 'is_stake': true, 'stake_amount': 3000},
+            {'time': norm_start_time + 0.6 * norm_duration, 'is_stake': false, 'unstake_num': 2, 'unstake_amount': 666.6666666666667},
+            {'time': norm_start_time + 0.8 * norm_duration, 'is_stake': false, 'unstake_num': 3, 'unstake_amount': 1190.4761904761904},
+            {'time': norm_start_time + norm_duration, 'is_stake': false, 'unstake_num': 1, 'unstake_amount': 142.85714285714286}
+        ],
+        'referral_enable': false,
+        'referral_percent': 0,
+    },
+    {
+        'name': 'A Test With Three Stokers & Some After Duration UnStakes',
+        'reward_amount': norm_reward_amount,
+        'start_time': norm_start_time,
+        'duration': 0.7 * norm_duration,
+        'times': [
+            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 1000},
+            {'time': norm_start_time + 0.2 * norm_duration, 'is_stake': true, 'stake_amount': 2000},
+            {'time': norm_start_time + 0.4 * norm_duration, 'is_stake': true, 'stake_amount': 3000},
+            {'time': norm_start_time + 0.6 * norm_duration, 'is_stake': false, 'unstake_num': 2, 'unstake_amount': 666.6666666666667},
+            {'time': norm_start_time + 0.8 * norm_duration, 'is_stake': false, 'unstake_num': 3, 'unstake_amount': 1102.5641025641025},
+            {'time': norm_start_time + norm_duration, 'is_stake': false, 'unstake_num': 1, 'unstake_amount': 230.76923076923077}
+        ],
+        'referral_enable': false,
+        'referral_percent': 0,
+    },
+    {
+        'name': 'A Test With Four Stokers & Some Complicated',
+        'reward_amount': norm_reward_amount,
+        'start_time': norm_start_time,
+        'duration': norm_duration,
+        'times': [
+            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 3000},
+            {'time': norm_start_time + 0.1 * norm_duration, 'is_stake': true, 'stake_amount': 1000},
+            {'time': norm_start_time + 0.2 * norm_duration, 'is_stake': false, 'unstake_num': 2, 'unstake_amount': 509.8039215686274},
+            {'time': norm_start_time + 0.5 * norm_duration, 'is_stake': true, 'stake_amount': 3000},
+            {'time': norm_start_time + 0.6 * norm_duration, 'is_stake': true, 'stake_amount': 4000},
+            {'time': norm_start_time + 0.7 * norm_duration, 'is_stake': false, 'unstake_num': 3, 'unstake_amount': 650.9803921568626},
+            {'time': norm_start_time + 0.8 * norm_duration, 'is_stake': false, 'unstake_num': 4, 'unstake_amount': 894.1176470588234},
+            {'time': norm_start_time + norm_duration, 'is_stake': false, 'unstake_num': 1, 'unstake_amount': -54.90196078431378},
+        ],
+        'referral_enable': false,
+        'referral_percent': 0,
+    },
+    {
+        'name': 'A Test With Four Stokers & Some After Duration Unstakes',
+        'reward_amount': norm_reward_amount,
+        'start_time': norm_start_time,
+        'duration': 0.6 * norm_duration,
+        'times': [
+            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 3000},
+            {'time': norm_start_time + 0.1 * norm_duration, 'is_stake': true, 'stake_amount': 1000},
+            {'time': norm_start_time + 0.2 * norm_duration, 'is_stake': false, 'unstake_num': 2, 'unstake_amount': 507.1428571428571},
+            {'time': norm_start_time + 0.5 * norm_duration, 'is_stake': true, 'stake_amount': 3000},
+            {'time': norm_start_time + 0.6 * norm_duration, 'is_stake': true, 'stake_amount': 4000},
+            {'time': norm_start_time + 0.7 * norm_duration, 'is_stake': false, 'unstake_num': 3, 'unstake_amount': 637.1428571428572},
+            {'time': norm_start_time + 0.8 * norm_duration, 'is_stake': false, 'unstake_num': 4, 'unstake_amount': 868.5714285714287},
+            {'time': norm_start_time + norm_duration, 'is_stake': false, 'unstake_num': 1, 'unstake_amount': -12.85714285714301},
+        ],
+        'referral_enable': false,
         'referral_percent': 0,
     }
 ]
@@ -68,20 +159,6 @@ contract("TokenFarm", ([owner, investor]) => {
             });
         }
     })
-
-    describe("Mock DAI deployment", async () => {
-        it("has a name", async () => {
-            const name = await daiToken.name();
-            assert.equal(name, "Mock DAI Token");
-        });
-    });
-
-    describe("Dapp Token deployment", async () => {
-        it("has a name", async () => {
-            const name = await dappToken.name();
-            assert.equal(name, "DApp Token");
-        });
-    });
 
     describe("Token Farm deployment", async () => {
         it("has a name", async () => {
