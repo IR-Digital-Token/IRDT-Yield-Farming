@@ -5,7 +5,7 @@ norm_reward_amount = 2000.0
 norm_start_time = 50
 norm_duration = 100
 delta_t = 10
-tests = [
+norm_test_cases = [
     {
         'name': 'A Normal Test With Just One Stoker',
         'reward_amount': norm_reward_amount,
@@ -127,6 +127,6 @@ def fill_stake_amounts(scenario):
     pprint.PrettyPrinter().pprint(scenario)
 
 
-for test in tests:
+for test in norm_test_cases:
     fill_stake_amounts(test)
     print('')
