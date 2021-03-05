@@ -119,7 +119,7 @@ def fill_stake_amounts(scenario):
     for time in scenario['times']:
         forwardTime(time['time'] - before_time)
         if time['is_stake']:
-            users.append(User(plan, time['stake_amount']))
+            users.append(User(plan, time['stake_amount'], referrerID=0))
         else:
             time['unstake_amount'] = users[time['unstake_num'] - 1].unStake(plan)
         before_time = time['time']
