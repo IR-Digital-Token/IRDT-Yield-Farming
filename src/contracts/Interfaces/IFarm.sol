@@ -6,13 +6,11 @@ interface IStakingRewards {
 
     function stake(uint256 planIndex, uint256 amount, uint256 referrer) external;
 
-    function unstakeAndClaimRewards(uint256 planIndex, uint256 unstakeAmount) external;
-
-    function unstake(uint256 planIndex, uint256 amount) external;
-
-    function claimRewards(uint256 planIndex) external;
+    function unstakeAndClaimRewards(uint256 planIndex) external;
 
     // Views
+    function getPlanData(uint256 planIndex) external view returns (uint256);
+
     function lastTimeRewardApplicable(uint256 planIndex) external view returns (uint256);
 
     function rewardPerToken(uint256 planIndex, uint256 rewardTokenIndex) external view returns (uint256);
