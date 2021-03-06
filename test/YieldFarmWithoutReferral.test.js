@@ -28,7 +28,8 @@ contract("TokenFarm", ([owner, investor]) => {
                 for (let time of testCase.times) {
                     await advanceTime(time.time - beforeTime)
                     if (time.is_stake) {
-                        let stakeFunc = yieldFarmingContract.stake(plan, time.stake_amount, time.referrer | 0, {from: accounts[usersLen]})
+                        // The "time.stake_num" Is Just For Reenter TestCases & It's Not Related To "userLen". For That, There Is No Need For userLen
+                        let stakeFunc = yieldFarmingContract.stake(plan, time.stake_amount, time.referrer | 0, {from: accounts[time.stake_num ? (time.stake_num - 1) : usersLen]})
 
                         if (time.is_reenter) {
                             await tryCatch(stakeFunc, errTypes.revert);
@@ -37,8 +38,12 @@ contract("TokenFarm", ([owner, investor]) => {
                             usersLen++
                         }
                     } else {
-                        let unstakeAmount = await yieldFarmingContract.unstakeAndClaimRewards(0, {from: accounts[time.unstake_num - 1]})
-                        assert.equal(time.unstake_amount, unstakeAmount)
+                        let unstakeAmountFunc = yieldFarmingContract.unstakeAndClaimRewards(0, {from: accounts[time.unstake_num - 1]})
+                        if (time.is_reenter) {
+                            await tryCatch(unstakeAmountFunc, errTypes.revert);
+                        } else {
+                            assert.equal(time.unstake_amount, unstakeAmount)
+                        }
                     }
                     beforeTime = time.time
                 }
