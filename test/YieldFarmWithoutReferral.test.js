@@ -3,6 +3,8 @@
 
 import {norm_test_cases} from "./testCaseData/normTestCases";
 import {errTypes, tryCatch} from "./utils/exceptionHandler";
+import {reenter_test_cases} from "./testCaseData/reenterTestCases";
+import {referral_test_cases} from "./testCaseData/referralTestCases";
 
 require("chai")
     .use(require("chai-as-promised"))
@@ -17,24 +19,8 @@ contract("TokenFarm", ([owner, investor]) => {
     let yieldFarmingContract;
     let token, rewardToken;
 
-    before(async () => {
-        //todo
-        // for now, yieldFarmingContract & token & rewardToken NeedsTo BeSet
-
-        // Load Contracts
-        // daiToken = await DaiToken.new();
-        // dappToken = await DappToken.new();
-        // tokenFarm = await TokenFarm.new(dappToken.address, daiToken.address);
-
-        // Transfer all Dapp tokens to farm (1 million)
-        // await dappToken.transfer(tokenFarm.address, tokens("1000000"));
-
-        // Send tokens to investor
-        // await daiToken.transfer(investor, tokens("100"), {from: owner});
-    });
-
-    describe("Norm Scenarios Testing", async () => {
-        for (let testCase of norm_test_cases) {
+    let testerFunc = async (testCases) => {
+        for (let testCase of testCases) {
             it(testCase.name, async () => {
                 let plan = await yieldFarmingContract.addPlan(token, rewardToken, testCase.reward_amount, testCase.start_time,
                     testCase.duration, testCase.referral_enable, testCase.referral_percent)
@@ -58,11 +44,29 @@ contract("TokenFarm", ([owner, investor]) => {
                 }
             });
         }
-    })
+    }
 
-    describe("Reenter Scenarios Testing", async () => {
-        //    todo
-    })
+    before(async () => {
+        //todo
+        // for now, yieldFarmingContract & token & rewardToken NeedsTo BeSet
+
+        // Load Contracts
+        // daiToken = await DaiToken.new();
+        // dappToken = await DappToken.new();
+        // tokenFarm = await TokenFarm.new(dappToken.address, daiToken.address);
+
+        // Transfer all Dapp tokens to farm (1 million)
+        // await dappToken.transfer(tokenFarm.address, tokens("1000000"));
+
+        // Send tokens to investor
+        // await daiToken.transfer(investor, tokens("100"), {from: owner});
+    });
+
+    describe("Norm Scenarios Testing", testerFunc(norm_test_cases))
+
+    describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
+
+    describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
 
     describe("Token Farm deployment", async () => {
         it("has a name", async () => {
