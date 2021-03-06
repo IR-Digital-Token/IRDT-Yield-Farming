@@ -2,6 +2,7 @@
 // const DaiToken = artifacts.require("DaiToken");
 
 import {norm_test_cases} from "./testCaseData/normTestCases";
+import {errTypes, tryCatch} from "./utils/exceptionHandler";
 
 require("chai")
     .use(require("chai-as-promised"))
@@ -41,8 +42,14 @@ contract("TokenFarm", ([owner, investor]) => {
                 for (let time of testCase.times) {
                     await advanceTime(time.time - beforeTime)
                     if (time.is_stake) {
-                        await yieldFarmingContract.stake(plan, time.stake_amount, time.referrer | 0, {from: accounts[usersLen]})
-                        usersLen++
+                        let stakeFunc = yieldFarmingContract.stake(plan, time.stake_amount, time.referrer | 0, {from: accounts[usersLen]})
+
+                        if (time.is_reenter) {
+                            await tryCatch(stakeFunc, errTypes.revert);
+                        } else {
+                            await stakeFunc
+                            usersLen++
+                        }
                     } else {
                         let unstakeAmount = await yieldFarmingContract.unstakeAndClaimRewards(0, {from: accounts[time.unstake_num - 1]})
                         assert.equal(time.unstake_amount, unstakeAmount)
