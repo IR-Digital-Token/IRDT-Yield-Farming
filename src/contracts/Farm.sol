@@ -93,6 +93,7 @@ contract Farm is IFarm, Ownable {
         uint256 integralOfRewardPerToken;
         bool referralEnable;
         uint256 referralPercent;
+        uint256 startTime;
         uint256 prevTimeStake;
         uint256 currentTimeStake;
         mapping(address => User) users;
@@ -112,6 +113,7 @@ contract Farm is IFarm, Ownable {
         duration : duration,
         referralEnable : referralEnable,
         referralPercent : referralPercent,
+        startTime: startTime,
         prevTimeStake : startTime,
         currentTimeStake : startTime
         });
@@ -133,7 +135,20 @@ contract Farm is IFarm, Ownable {
         //        handle Id todo
     }
 
-    function unstakeAndClaimRewards(uint256 planIndex) external;
+    function unstakeAndClaimRewards(uint256 planIndex) external {
+        Plan plan = Plans[planIndex];
+        require(now>plan.startTime.add(plan.duration));
+        User user = plan.users[msg.sender];
+        require(user.tokenAmount > 0);
+        uint256 reward = (plan.integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
+        plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
+        if(plan.referralEnable){
+//            transfer reward to referrer todo
+        }
+//        transfer reward to msg.sender todo
+
+
+    }
 
     // Views
     function getPlanData(uint256 planIndex) external view returns (uint256);
