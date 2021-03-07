@@ -1,6 +1,11 @@
 /* eslint-disable */
 // const DaiToken = artifacts.require("DaiToken");
 
+import {norm_test_cases} from "./testCaseData/normTestCases";
+import {errTypes, tryCatch} from "./utils/exceptionHandler";
+import {reenter_test_cases} from "./testCaseData/reenterTestCases";
+import {referral_test_cases} from "./testCaseData/referralTestCases";
+
 require("chai")
     .use(require("chai-as-promised"))
     .should();
@@ -9,175 +14,42 @@ function tokens(n) {
     return web3.utils.toWei(n, "ether");
 }
 
-let norm_reward_amount = 2000.0
-let norm_start_time = 50
-let norm_duration = 100
-let delta_t = 2
-let norm_test_cases = [
-    {
-        'name': 'A Normal Test With Just One Stoker',
-        'reward_amount': norm_reward_amount,
-        'start_time': norm_start_time,
-        'duration': norm_duration,
-        'times': [
-            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 1000},
-            {
-                'time': (norm_start_time + norm_duration),
-                'is_stake': false,
-                'unstake_num': 1,
-                'unstake_amount': norm_reward_amount
-            }
-        ],
-        'referral_enable': false,
-        'referral_percent': 0,
-    },
-    {
-        'name': 'A Test With One Stoker & Delay',
-        'reward_amount': norm_reward_amount,
-        'start_time': norm_start_time,
-        'duration': norm_duration,
-        'times': [
-            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 1000},
-            {
-                'time': (norm_start_time + norm_duration + delta_t),
-                'is_stake': false,
-                'unstake_num': 1,
-                'unstake_amount': norm_reward_amount
-            }
-        ],
-        'referral_enable': false,
-        'referral_percent': 0,
-    },
-    {
-        'name': 'A Test With Three Stokers',
-        'reward_amount': norm_reward_amount,
-        'start_time': norm_start_time,
-        'duration': norm_duration,
-        'times': [
-            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 1000},
-            {'time': norm_start_time + 0.2 * norm_duration, 'is_stake': true, 'stake_amount': 2000},
-            {'time': norm_start_time + 0.4 * norm_duration, 'is_stake': true, 'stake_amount': 3000},
-            {
-                'time': norm_start_time + 0.6 * norm_duration,
-                'is_stake': false,
-                'unstake_num': 2,
-                'unstake_amount': 399.9999999999999
-            },
-            {
-                'time': norm_start_time + 0.8 * norm_duration,
-                'is_stake': false,
-                'unstake_num': 3,
-                'unstake_amount': 499.9999999999999
-            },
-            {'time': norm_start_time + norm_duration, 'is_stake': false, 'unstake_num': 1, 'unstake_amount': 1100.0}
-        ],
-        'referral_enable': false,
-        'referral_percent': 0,
-    },
-    {
-        'name': 'A Test With Three Stokers & Some After Duration UnStakes',
-        'reward_amount': norm_reward_amount,
-        'start_time': norm_start_time,
-        'duration': 0.7 * norm_duration,
-        'times': [
-            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 1000},
-            {'time': norm_start_time + 0.2 * norm_duration, 'is_stake': true, 'stake_amount': 2000},
-            {'time': norm_start_time + 0.4 * norm_duration, 'is_stake': true, 'stake_amount': 3000},
-            {
-                'time': norm_start_time + 0.6 * norm_duration,
-                'is_stake': false,
-                'unstake_num': 2,
-                'unstake_amount': 571.4285714285714
-            },
-            {
-                'time': norm_start_time + 0.8 * norm_duration,
-                'is_stake': false,
-                'unstake_num': 3,
-                'unstake_amount': 499.9999999999999
-            },
-            {
-                'time': norm_start_time + norm_duration,
-                'is_stake': false,
-                'unstake_num': 1,
-                'unstake_amount': 928.5714285714284
-            }
-        ],
-        'referral_enable': false,
-        'referral_percent': 0,
-    },
-    {
-        'name': 'A Test With Four Stokers & Some Complicated',
-        'reward_amount': norm_reward_amount,
-        'start_time': norm_start_time,
-        'duration': norm_duration,
-        'times': [
-            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 3000},
-            {'time': norm_start_time + 0.1 * norm_duration, 'is_stake': true, 'stake_amount': 1000},
-            {
-                'time': norm_start_time + 0.2 * norm_duration,
-                'is_stake': false,
-                'unstake_num': 2,
-                'unstake_amount': 50.0
-            },
-            {'time': norm_start_time + 0.5 * norm_duration, 'is_stake': true, 'stake_amount': 3000},
-            {'time': norm_start_time + 0.6 * norm_duration, 'is_stake': true, 'stake_amount': 4000},
-            {
-                'time': norm_start_time + 0.7 * norm_duration,
-                'is_stake': false,
-                'unstake_num': 3,
-                'unstake_amount': 160.00000000000003
-            },
-            {
-                'time': norm_start_time + 0.8 * norm_duration,
-                'is_stake': false,
-                'unstake_num': 4,
-                'unstake_amount': 194.2857142857144
-            },
-            {
-                'time': norm_start_time + norm_duration,
-                'is_stake': false,
-                'unstake_num': 1,
-                'unstake_amount': 1595.7142857142856
-            },
-        ],
-        'referral_enable': false,
-        'referral_percent': 0,
-    },
-    {
-        'name': 'A Test With Four Stokers & Some After Duration Unstakes',
-        'reward_amount': norm_reward_amount,
-        'start_time': norm_start_time,
-        'duration': 0.6 * norm_duration,
-        'times': [
-            {'time': norm_start_time, 'is_stake': true, 'stake_amount': 3000},
-            {'time': norm_start_time + 0.1 * norm_duration, 'is_stake': true, 'stake_amount': 1000},
-            {
-                'time': norm_start_time + 0.2 * norm_duration,
-                'is_stake': false,
-                'unstake_num': 2,
-                'unstake_amount': 83.33333333333333
-            },
-            {'time': norm_start_time + 0.5 * norm_duration, 'is_stake': true, 'stake_amount': 3000},
-            {'time': norm_start_time + 0.6 * norm_duration, 'is_stake': true, 'stake_amount': 4000},
-            {
-                'time': norm_start_time + 0.7 * norm_duration,
-                'is_stake': false,
-                'unstake_num': 3,
-                'unstake_amount': 166.66666666666674
-            },
-            {'time': norm_start_time + 0.8 * norm_duration, 'is_stake': false, 'unstake_num': 4, 'unstake_amount': 0.0},
-            {'time': norm_start_time + norm_duration, 'is_stake': false, 'unstake_num': 1, 'unstake_amount': 1750.0},
-        ],
-        'referral_enable': false,
-        'referral_percent': 0,
-    }
-]
-let reenter_test_cases = []
-
 contract("TokenFarm", ([owner, investor]) => {
     let daiToken, dappToken, tokenFarm;
     let yieldFarmingContract;
     let token, rewardToken;
+
+    let testerFunc = async (testCases) => {
+        for (let testCase of testCases) {
+            it(testCase.name, async () => {
+                let plan = await yieldFarmingContract.addPlan(token, rewardToken, testCase.reward_amount, testCase.start_time,
+                    testCase.duration, testCase.referral_enable, testCase.referral_percent)
+                let beforeTime = 0, usersLen = 0
+                for (let time of testCase.times) {
+                    await advanceTime(time.time - beforeTime)
+                    if (time.is_stake) {
+                        // The "time.stake_num" Is Just For Reenter TestCases & It's Not Related To "userLen". For That, There Is No Need For userLen
+                        let stakeFunc = yieldFarmingContract.stake(plan, time.stake_amount, time.referrer | 0, {from: accounts[time.stake_num ? (time.stake_num - 1) : usersLen]})
+
+                        if (time.is_reenter) {
+                            await tryCatch(stakeFunc, errTypes.revert);
+                        } else {
+                            await stakeFunc
+                            usersLen++
+                        }
+                    } else {
+                        let unstakeAmountFunc = yieldFarmingContract.unstakeAndClaimRewards(0, {from: accounts[time.unstake_num - 1]})
+                        if (time.is_reenter) {
+                            await tryCatch(unstakeAmountFunc, errTypes.revert);
+                        } else {
+                            assert.equal(time.unstake_amount, unstakeAmount)
+                        }
+                    }
+                    beforeTime = time.time
+                }
+            });
+        }
+    }
 
     before(async () => {
         //todo
@@ -195,30 +67,11 @@ contract("TokenFarm", ([owner, investor]) => {
         // await daiToken.transfer(investor, tokens("100"), {from: owner});
     });
 
-    describe("Norm Scenarios Testing", async () => {
-        for (let testCase of norm_test_cases) {
-            it(testCase.name, async () => {
-                let plan = await yieldFarmingContract.addPlan(token, rewardToken, testCase.reward_amount, testCase.start_time,
-                    testCase.duration, testCase.referral_enable, testCase.referral_percent)
-                let beforeTime = 0, usersLen = 0
-                for (let time of testCase.times) {
-                    await advanceTime(time.time - beforeTime)
-                    if (time.is_stake) {
-                        await yieldFarmingContract.stake(plan, time.stake_amount, time.referrer | 0, {from: accounts[usersLen]})
-                        usersLen++
-                    } else {
-                        let unstakeAmount = await yieldFarmingContract.unstakeAndClaimRewards(0, {from: accounts[time.unstake_num - 1]})
-                        assert.equal(time.unstake_amount, unstakeAmount)
-                    }
-                    beforeTime = time.time
-                }
-            });
-        }
-    })
+    describe("Norm Scenarios Testing", testerFunc(norm_test_cases))
 
-    describe("Norm Scenarios Testing", async () => {
-        //    todo
-    })
+    describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
+
+    describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
 
     describe("Token Farm deployment", async () => {
         it("has a name", async () => {
@@ -250,59 +103,11 @@ contract("TokenFarm", ([owner, investor]) => {
             });
             await tokenFarm.stakeTokens(tokens("100"), {from: investor});
 
-            // Check staking result
-            result = await daiToken.balanceOf(investor);
-            assert.equal(
-                result.toString(),
-                tokens("0"),
-                "investor Mock DAI wallet balance correct after staking"
-            );
-
-            result = await daiToken.balanceOf(tokenFarm.address);
-            assert.equal(
-                result.toString(),
-                tokens("100"),
-                "Token Farm Mock DAI balance correct after staking"
-            );
-
-            result = await tokenFarm.stakingBalance(investor);
-            assert.equal(
-                result.toString(),
-                tokens("100"),
-                "investor staking balance correct after staking"
-            );
-
-            result = await tokenFarm.isStaking(investor);
-            assert.equal(
-                result.toString(),
-                "true",
-                "investor staking status correct after staking"
-            );
-
-            // Issue Tokens
-            await tokenFarm.issueTokens({from: owner});
-
-            // Check balances after issuance
-            result = await dappToken.balanceOf(investor);
-            assert.equal(
-                result.toString(),
-                tokens("100"),
-                "investor DApp Token wallet balance correct affter issuance"
-            );
-
             // Ensure that only onwer can issue tokens
             await tokenFarm.issueTokens({from: investor}).should.be.rejected;
 
             // Unstake tokens
             await tokenFarm.unstakeTokens({from: investor});
-
-            // Check results after unstaking
-            result = await daiToken.balanceOf(investor);
-            assert.equal(
-                result.toString(),
-                tokens("100"),
-                "investor Mock DAI wallet balance correct after staking"
-            );
 
             result = await daiToken.balanceOf(tokenFarm.address);
             assert.equal(
