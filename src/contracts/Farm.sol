@@ -115,7 +115,7 @@ contract Farm is IFarm, Ownable {
         prevTimeStake : startTime,
         currentTimeStake : startTime
         });
-
+//        need stake at the start time ? todo
         Plans.push(plan);
     }
 
