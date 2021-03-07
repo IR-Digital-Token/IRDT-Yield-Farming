@@ -120,7 +120,7 @@ contract Farm is IFarm , Ownable{
     function totalSupply(uint256 planIndex) external view returns (uint256) {
         Plan plan = Plans[planIndex];
         return plan.totalTokenStaked;
-    };
+    }
 
     function balanceOf(uint256 planIndex, address account) external view returns (uint256) {
         require(address!=0);
