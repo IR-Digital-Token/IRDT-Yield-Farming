@@ -75,7 +75,7 @@ contract Ownable {
 contract Farm is IFarm , Ownable{
     using SafeMath for uint256;
 
-    struct user {
+    struct User {
         uint256 startingIntegral;
         address referrer;
         uint256 tokenAmount;
@@ -89,22 +89,34 @@ contract Farm is IFarm , Ownable{
         uint256 rewardAmount;
         uint256 duration;
         uint256 integralOfRewardPerToken;
-        bool refferalEnable;
-        uint256 referalPercent;
-        mapping (address => user) users;
+        bool referralEnable;
+        uint256 referralPercent;
+        uint256 prevTimeStake;
+        uint256 currentTimeStake;
+        mapping (address => User) users;
         mapping (address => uint256) addressToId;
         mapping (uint256 => address) idToAddress;
-        
     }
 
     Plan[] private Plans;
 
     // Mutative
-    function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool refferalEnable, uint256 referalPercent) public onlyOwner {
+    function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent) public onlyOwner {
 
     }
 
-    function stake(uint256 planIndex, uint256 amount, uint256 referrer) ;
+    function stake(uint256 planIndex, uint256 amount, uint256 referrer) {
+        address sender = msg.sender;
+        Plan plan = Plans[planIndex];
+//        require(); check re staking
+        plan.prevTimeStake = plan.currentTimeStake;
+        plan.currentTimeStake = now;
+        plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((plan.currentTimeStake.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
+        plan.totalTokenStaked = plan.totalTokenStaked.add(amount);
+        address referrerAddr = plan.idToAddress[referrer];
+        User newUser = User(plan.integralOfRewardPerToken, amount, referrerAddr);
+        plan.users[sender] = newUser;
+    }
 
     function unstakeAndClaimRewards(uint256 planIndex) external;
 
