@@ -1,4 +1,5 @@
 pragma solidity 5.0;
+
 import './Interfaces/IFarm.sol';
 
 
@@ -14,7 +15,7 @@ library SafeMath {
         return sub(a, b, "SafeMath: subtraction overflow");
     }
 
-    
+
     function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b <= a, errorMessage);
         uint256 c = a - b;
@@ -36,6 +37,7 @@ library SafeMath {
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
         return div(a, b, "SafeMath: division by zero");
     }
+
     function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b > 0, errorMessage);
         uint256 c = a / b;
@@ -63,16 +65,16 @@ contract Ownable {
         require(_owner == msg.sender, "Ownable: caller is not the owner");
         _;
     }
- 
+
     function transferOwnership(address newOwner) public onlyOwner {
         require(newOwner != address(0), "Ownable: new owner is the zero address");
         emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner; 
+        _owner = newOwner;
     }
 }
 
 
-contract Farm is IFarm , Ownable{
+contract Farm is IFarm, Ownable {
     using SafeMath for uint256;
 
     struct User {
@@ -93,22 +95,34 @@ contract Farm is IFarm , Ownable{
         uint256 referralPercent;
         uint256 prevTimeStake;
         uint256 currentTimeStake;
-        mapping (address => User) users;
-        mapping (address => uint256) addressToId;
-        mapping (uint256 => address) idToAddress;
+        mapping(address => User) users;
+        mapping(address => uint256) addressToId;
+        mapping(uint256 => address) idToAddress;
     }
 
     Plan[] private Plans;
 
     // Mutative
     function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent) public onlyOwner {
+        Plan plan = Plan({
+        stakingToken : token,
+        rewardToken : rewardToken,
+        remainingRewardAmount : rewardAmount,
+        rewardAmount : rewardAmount,
+        duration : duration,
+        referralEnable : referralEnable,
+        referralPercent : referralPercent,
+        prevTimeStake : startTime,
+        currentTimeStake : startTime
+        });
 
+        Plans.push(plan);
     }
 
     function stake(uint256 planIndex, uint256 amount, uint256 referrer) {
         address sender = msg.sender;
         Plan plan = Plans[planIndex];
-//        require(); check re staking
+        //        require(); check re staking todo
         plan.prevTimeStake = plan.currentTimeStake;
         plan.currentTimeStake = now;
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((plan.currentTimeStake.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
@@ -116,6 +130,7 @@ contract Farm is IFarm , Ownable{
         address referrerAddr = plan.idToAddress[referrer];
         User newUser = User(plan.integralOfRewardPerToken, amount, referrerAddr);
         plan.users[sender] = newUser;
+        //        handle Id todo
     }
 
     function unstakeAndClaimRewards(uint256 planIndex) external;
@@ -132,10 +147,10 @@ contract Farm is IFarm , Ownable{
     function totalSupply(uint256 planIndex) external view returns (uint256) {
         Plan plan = Plans[planIndex];
         return plan.totalTokenStaked;
-    };
+    }
 
     function balanceOf(uint256 planIndex, address account) external view returns (uint256) {
-        require(address!=0);
+        require(address != 0);
         Plan plan = Plans[planIndex];
         return plan.startingIntegral[account].tokenAmount;
     }
