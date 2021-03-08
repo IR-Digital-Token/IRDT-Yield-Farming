@@ -9,17 +9,13 @@ interface IStakingRewards {
     function unstakeAndClaimRewards(uint256 planIndex) external;
 
     // Views
-    function getPlanData(uint256 planIndex) external view returns (uint256);
-
-    function lastTimeRewardApplicable(uint256 planIndex) external view returns (uint256);
+    function getPlanData(uint256 planIndex) external view returns (address, address, uint256, uint256, uint256, uint256, uint256);
 
     function rewardPerToken(uint256 planIndex, uint256 rewardTokenIndex) external view returns (uint256);
-
-    function earned(uint256 planIndex, address account, uint256 rewardTokenIndex) external view returns (uint256);
-
-    function getRewardForDuration(uint256 planIndex, uint256 rewardTokenIndex) external view returns (uint256);
 
     function totalSupply(uint256 planIndex) external view returns (uint256);
 
     function balanceOf(uint256 planIndex, address account) external view returns (uint256);
+
+    function getID(uint256 planIndex) external view returns (uint256);
 }
