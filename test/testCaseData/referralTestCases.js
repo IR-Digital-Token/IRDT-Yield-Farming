@@ -2,216 +2,158 @@
 import {norm_duration, norm_reward_amount, norm_start_time, delta_t} from "./normData";
 
 export const referral_test_cases = [
-    {
-        name: "A Normal Test With Just One Stoker",
-        reward_amount: norm_reward_amount,
-        start_time: norm_start_time,
-        duration: norm_duration,
-        times: [
-            {time: norm_start_time, is_stake: true, stake_amount: 1000},
-            {
-                time: norm_start_time + norm_duration,
-                is_stake: false,
-                unstake_num: 1,
-                unstake_amount: norm_reward_amount
-            }
-        ],
-        referral_enable: false,
-        referral_percent: 0
-    },
-    {
-        name: "A Test With One Stoker & Delay",
-        reward_amount: norm_reward_amount,
-        start_time: norm_start_time,
-        duration: norm_duration,
-        times: [
-            {time: norm_start_time, is_stake: true, stake_amount: 1000},
-            {
-                time: norm_start_time + norm_duration + delta_t,
-                is_stake: false,
-                unstake_num: 1,
-                unstake_amount: norm_reward_amount
-            }
-        ],
-        referral_enable: false,
-        referral_percent: 0
-    },
-    {
-        name: "A Test With Three Stokers",
-        reward_amount: norm_reward_amount,
-        start_time: norm_start_time,
-        duration: norm_duration,
-        times: [
-            {time: norm_start_time, is_stake: true, stake_amount: 1000},
-            {
-                time: norm_start_time + 0.2 * norm_duration,
-                is_stake: true,
-                stake_amount: 2000
-            },
-            {
-                time: norm_start_time + 0.4 * norm_duration,
-                is_stake: true,
-                stake_amount: 3000
-            },
-            {
-                time: norm_start_time + 0.6 * norm_duration,
-                is_stake: false,
-                unstake_num: 2,
-                unstake_amount: 399.9999999999999
-            },
-            {
-                time: norm_start_time + 0.8 * norm_duration,
-                is_stake: false,
-                unstake_num: 3,
-                unstake_amount: 499.9999999999999
-            },
-            {
-                time: norm_start_time + norm_duration,
-                is_stake: false,
-                unstake_num: 1,
-                unstake_amount: 1100.0
-            }
-        ],
-        referral_enable: false,
-        referral_percent: 0
-    },
-    {
-        name: "A Test With Three Stokers & Some After Duration UnStakes",
-        reward_amount: norm_reward_amount,
-        start_time: norm_start_time,
-        duration: 0.7 * norm_duration,
-        times: [
-            {time: norm_start_time, is_stake: true, stake_amount: 1000},
-            {
-                time: norm_start_time + 0.2 * norm_duration,
-                is_stake: true,
-                stake_amount: 2000
-            },
-            {
-                time: norm_start_time + 0.4 * norm_duration,
-                is_stake: true,
-                stake_amount: 3000
-            },
-            {
-                time: norm_start_time + 0.6 * norm_duration,
-                is_stake: false,
-                unstake_num: 2,
-                unstake_amount: 571.4285714285714
-            },
-            {
-                time: norm_start_time + 0.8 * norm_duration,
-                is_stake: false,
-                unstake_num: 3,
-                unstake_amount: 499.9999999999999
-            },
-            {
-                time: norm_start_time + norm_duration,
-                is_stake: false,
-                unstake_num: 1,
-                unstake_amount: 928.5714285714284
-            }
-        ],
-        referral_enable: false,
-        referral_percent: 0
-    },
-    {
-        name: "A Test With Four Stokers & Some Complicated",
-        reward_amount: norm_reward_amount,
-        start_time: norm_start_time,
-        duration: norm_duration,
-        times: [
-            {time: norm_start_time, is_stake: true, stake_amount: 3000},
-            {
-                time: norm_start_time + 0.1 * norm_duration,
-                is_stake: true,
-                stake_amount: 1000
-            },
-            {
-                time: norm_start_time + 0.2 * norm_duration,
-                is_stake: false,
-                unstake_num: 2,
-                unstake_amount: 50.0
-            },
-            {
-                time: norm_start_time + 0.5 * norm_duration,
-                is_stake: true,
-                stake_amount: 3000
-            },
-            {
-                time: norm_start_time + 0.6 * norm_duration,
-                is_stake: true,
-                stake_amount: 4000
-            },
-            {
-                time: norm_start_time + 0.7 * norm_duration,
-                is_stake: false,
-                unstake_num: 3,
-                unstake_amount: 160.00000000000003
-            },
-            {
-                time: norm_start_time + 0.8 * norm_duration,
-                is_stake: false,
-                unstake_num: 4,
-                unstake_amount: 194.2857142857144
-            },
-            {
-                time: norm_start_time + norm_duration,
-                is_stake: false,
-                unstake_num: 1,
-                unstake_amount: 1595.7142857142856
-            }
-        ],
-        referral_enable: false,
-        referral_percent: 0
-    },
-    {
-        name: "A Test With Four Stokers & Some After Duration Unstakes",
-        reward_amount: norm_reward_amount,
-        start_time: norm_start_time,
-        duration: 0.6 * norm_duration,
-        times: [
-            {time: norm_start_time, is_stake: true, stake_amount: 3000},
-            {
-                time: norm_start_time + 0.1 * norm_duration,
-                is_stake: true,
-                stake_amount: 1000
-            },
-            {
-                time: norm_start_time + 0.2 * norm_duration,
-                is_stake: false,
-                unstake_num: 2,
-                unstake_amount: 83.33333333333333
-            },
-            {
-                time: norm_start_time + 0.5 * norm_duration,
-                is_stake: true,
-                stake_amount: 3000
-            },
-            {
-                time: norm_start_time + 0.6 * norm_duration,
-                is_stake: true,
-                stake_amount: 4000
-            },
-            {
-                time: norm_start_time + 0.7 * norm_duration,
-                is_stake: false,
-                unstake_num: 3,
-                unstake_amount: 166.66666666666674
-            },
-            {
-                time: norm_start_time + 0.8 * norm_duration,
-                is_stake: false,
-                unstake_num: 4,
-                unstake_amount: 0.0
-            },
-            {
-                time: norm_start_time + norm_duration,
-                is_stake: false,
-                unstake_num: 1,
-                unstake_amount: 1750.0
-            }
-        ],
-        referral_enable: false,
-        referral_percent: 0
-    }
-];
+    {'duration': 100,
+'name': 'A Normal Test With Just One Stoker',
+'referral_enable': True,
+'referral_percent': 10,
+'reward_amount': 2000.0,
+'start_time': 50,
+'times': [{'is_stake': True, 'referrer': 1, 'stake_amount': 1000, 'time': 50},
+          {'is_stake': False,
+           'time': 150,
+           'unstake_amount': {'1': 2000.0},
+           'unstake_num': 1}]},
+
+{'duration': 100,
+'name': 'A Test With One Stoker & Delay',
+'referral_enable': True,
+'referral_percent': 6,
+'reward_amount': 2000.0,
+'start_time': 50,
+'times': [{'is_stake': True, 'referrer': 2, 'stake_amount': 1000, 'time': 50},
+          {'is_stake': False,
+           'time': 160,
+           'unstake_amount': {'1': 2000.0},
+           'unstake_num': 1}]}
+,
+{'duration': 100,
+'name': 'A Test With Three Stokers',
+'referral_enable': True,
+'referral_percent': 4,
+'reward_amount': 2000.0,
+'start_time': 50,
+'times': [{'is_stake': True, 'referrer': 1, 'stake_amount': 1000, 'time': 50},
+          {'is_stake': True,
+           'referrer': 2,
+           'stake_amount': 2000,
+           'time': 70.0},
+          {'is_stake': True,
+           'referrer': 2,
+           'stake_amount': 3000,
+           'time': 90.0},
+          {'is_stake': False,
+           'time': 110.0,
+           'unstake_amount': {'1': 15.999999999999996, '2': 383.9999999999999},
+           'unstake_num': 2},
+          {'is_stake': False,
+           'time': 130.0,
+           'unstake_amount': {'2': 19.999999999999996, '3': 479.9999999999999},
+           'unstake_num': 3},
+          {'is_stake': False,
+           'time': 150,
+           'unstake_amount': {'1': 1100.0},
+           'unstake_num': 1}]}
+,
+{'duration': 70.0,
+'name': 'A Test With Three Stokers & Some After Duration UnStakes',
+'referral_enable': True,
+'referral_percent': 8,
+'reward_amount': 2000.0,
+'start_time': 50,
+'times': [{'is_stake': True, 'referrer': 1, 'stake_amount': 1000, 'time': 50},
+          {'is_stake': True,
+           'referrer': 1,
+           'stake_amount': 2000,
+           'time': 70.0},
+          {'is_stake': True,
+           'referrer': 2,
+           'stake_amount': 3000,
+           'time': 90.0},
+          {'is_stake': False,
+           'time': 110.0,
+           'unstake_amount': {'1': 45.714285714285715, '2': 525.7142857142858},
+           'unstake_num': 2},
+          {'is_stake': False,
+           'time': 130.0,
+           'unstake_amount': {'2': 39.99999999999999, '3': 459.99999999999994},
+           'unstake_num': 3},
+          {'is_stake': False,
+           'time': 150,
+           'unstake_amount': {'1': 928.5714285714284},
+           'unstake_num': 1}]}
+,
+{'duration': 100,
+'name': 'A Test With Four Stokers & Some Complicated',
+'referral_enable': True,
+'referral_percent': 14,
+'reward_amount': 2000.0,
+'start_time': 50,
+'times': [{'is_stake': True, 'referrer': 1, 'stake_amount': 3000, 'time': 50},
+          {'is_stake': True,
+           'referrer': 1,
+           'stake_amount': 1000,
+           'time': 60.0},
+          {'is_stake': False,
+           'time': 70.0,
+           'unstake_amount': {'1': 7.000000000000001, '2': 43.0},
+           'unstake_num': 2},
+          {'is_stake': True,
+           'referrer': 2,
+           'stake_amount': 3000,
+           'time': 100.0},
+          {'is_stake': True,
+           'referrer': 1,
+           'stake_amount': 4000,
+           'time': 110.0},
+          {'is_stake': False,
+           'time': 120.0,
+           'unstake_amount': {'1': 22.400000000000006,
+                              '3': 137.60000000000002},
+           'unstake_num': 3},
+          {'is_stake': False,
+           'time': 130.0,
+           'unstake_amount': {'1': 27.200000000000017,
+                              '4': 167.08571428571437},
+           'unstake_num': 4},
+          {'is_stake': False,
+           'time': 150,
+           'unstake_amount': {'1': 1595.7142857142856},
+           'unstake_num': 1}]}
+,
+{'duration': 60.0,
+'name': 'A Test With Four Stokers & Some After Duration Unstakes',
+'referral_enable': True,
+'referral_percent': 18,
+'reward_amount': 2000.0,
+'start_time': 50,
+'times': [{'is_stake': True, 'referrer': 1, 'stake_amount': 3000, 'time': 50},
+          {'is_stake': True,
+           'referrer': 1,
+           'stake_amount': 1000,
+           'time': 60.0},
+          {'is_stake': False,
+           'time': 70.0,
+           'unstake_amount': {'1': 14.999999999999998, '2': 68.33333333333333},
+           'unstake_num': 2},
+          {'is_stake': True,
+           'referrer': 1,
+           'stake_amount': 3000,
+           'time': 100.0},
+          {'is_stake': True,
+           'referrer': 2,
+           'stake_amount': 4000,
+           'time': 110.0},
+          {'is_stake': False,
+           'time': 120.0,
+           'unstake_amount': {'1': 30.000000000000014,
+                              '3': 136.66666666666674},
+           'unstake_num': 3},
+          {'is_stake': False,
+           'time': 130.0,
+           'unstake_amount': {'1': 0.0, '4': 0.0},
+           'unstake_num': 4},
+          {'is_stake': False,
+           'time': 150,
+           'unstake_amount': {'1': 1750.0},
+           'unstake_num': 1}]}
+        ];
