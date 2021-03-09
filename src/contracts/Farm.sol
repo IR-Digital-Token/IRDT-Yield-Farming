@@ -2,7 +2,7 @@ pragma solidity ^0.5.16;
 
 
 import './Interfaces/IFarm.sol';
-import './Interfaces/IERC20.sol';
+import './Interfaces/IERC210.sol';
 
 library SafeMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -75,7 +75,7 @@ contract Ownable {
 }
 
 
-contract Farm is Ownable, IFarm {
+contract Farm is Ownable {
     using SafeMath for uint256;
 
     struct User {
@@ -105,6 +105,9 @@ contract Farm is Ownable, IFarm {
     mapping(uint256 => mapping(uint256 => address)) idToAddress;
     mapping(uint256 => mapping(address => User)) users;
     Plan[] private plans;
+
+    constructor () public {
+    }
 
     // Mutative
     function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent, uint256 initialStakingAmount) public onlyOwner {
@@ -152,7 +155,7 @@ contract Farm is Ownable, IFarm {
         plan.idCounter++;
     }
 
-    function unstakeAndClaimRewards(uint256 planIndex) external {
+    function unstakeAndClaimRewards(uint256 planIndex) public {
         Plan storage plan = plans[planIndex];
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0);
@@ -172,7 +175,7 @@ contract Farm is Ownable, IFarm {
     }
 
     // Views
-    function getPlanData(uint256 planIndex) view public returns (address, address, uint256, uint256, uint256, uint256, uint256){
+    function getPlanData(uint256 planIndex) view public returns (address stakingTokenAddress, address rewardTokenAddress, uint256 totalTokenStaked, uint256 rewardAmount, uint256 referralPercent, uint256 startTime, uint256 duration){
         Plan memory plan = plans[planIndex];
         return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.totalTokenStaked, plan.rewardAmount, plan.referralPercent,plan.startTime, plan.duration);
     }
@@ -196,7 +199,7 @@ contract Farm is Ownable, IFarm {
         return (user.tokenAmount, reward);
     }
 
-    function getID(uint256 planIndex) view public returns (uint256) {
+    function getID(uint256 planIndex) view public returns (uint256 id) {
         return addressToId[planIndex][msg.sender];
     }
 }
