@@ -1,5 +1,7 @@
 /* eslint-disable */
-// const DaiToken = artifacts.require("DaiToken");
+const FarmContract = artifacts.require("Farm");
+const DaiToken = artifacts.require("DaiToken");
+const DappToken = artifacts.require("DappToken");
 
 import {norm_test_cases} from "./testCaseData/normTestCases";
 import {errTypes, tryCatch} from "./utils/exceptionHandler";
@@ -18,6 +20,7 @@ contract("TokenFarm", ([owner, investor]) => {
     let daiToken, dappToken, tokenFarm;
     let yieldFarmingContract;
     let token, rewardToken;
+    let totalBalance
 
     let testerFunc = async (testCases) => {
         for (let testCase of testCases) {
@@ -55,6 +58,16 @@ contract("TokenFarm", ([owner, investor]) => {
         //todo
         // for now, yieldFarmingContract & token & rewardToken NeedsTo BeSet
 
+        // init contract for owner="The Last Account Of BlockChain"
+        yieldFarmingContract = await FarmContract.new({from: owner})
+        daiToken = await DaiToken.new({from: owner})
+        dappToken = await DappToken.new({from: owner});
+
+        totalBalance = 1000000
+        for (let account in accounts) {
+            await dappToken.transfer(account, tokens(totalBalance.accounts.length), {from: owner})
+            await daiToken.transfer(account, tokens(totalBalance.accounts.length), {from: owner})
+        }
         // Load Contracts
         // daiToken = await DaiToken.new();
         // dappToken = await DappToken.new();
@@ -66,6 +79,17 @@ contract("TokenFarm", ([owner, investor]) => {
         // Send tokens to investor
         // await daiToken.transfer(investor, tokens("100"), {from: owner});
     });
+
+    describe("Check Balances", async () => {
+        it("Check Balances Of Token", async () => {
+            for (let account in accounts) {
+                let balance = await dappToken.balanceOf[account]
+                let balance2 = await daiToken.balanceOf[account]
+                assert.equal(balance, totalBalance / accounts.length)
+                assert.equal(balance2, totalBalance / accounts.length)
+            }
+        })
+    })
 
     describe("Norm Scenarios Testing", testerFunc(norm_test_cases))
 
