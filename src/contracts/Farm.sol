@@ -127,7 +127,7 @@ contract Farm is IFarm, Ownable {
         plan.idCounter++; 
         plan.rewardToken.transferFrom(msg.sender, this, rewardAmount);
         plan.stakingToken.transferFrom(msg.sender, this, initialStakingAmount);
-        User newUser = User(0, msg.sender, initialStakingAmount);
+        User memory newUser = User(0, msg.sender, initialStakingAmount);
         plan.users[msg.sender] = newUser;
         Plans.push(plan);
     }
@@ -140,7 +140,7 @@ contract Farm is IFarm, Ownable {
         plan.prevTimeStake = now;
         plan.totalTokenStaked = plan.totalTokenStaked.add(amount);
         address referrerAddr = plan.idToAddress[referrer];
-        User newUser = User(plan.integralOfRewardPerToken, referrerAddr, amount);
+        User memory newUser = User(plan.integralOfRewardPerToken, referrerAddr, amount);
         plan.users[msg.sender] = newUser;
         plan.addressToId[msg.sender] = plan.idCounter;
         plan.idToAddress[plan.idCounter] = msg.sender;
@@ -167,13 +167,14 @@ contract Farm is IFarm, Ownable {
     }
 
     // Views
-    function getPlanData(uint256 planIndex) view returns (address, address, uint256, uint256, uint256, uint256, uint256){
+    function getPlanData(uint256 planIndex) view public returns (address, address, uint256, uint256, uint256, uint256, uint256){
         Plan memory plan = Plans[planIndex];
         return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.totalTokenStaked, plan.rewardAmount, plan.referralPercent,plan.startTime, plan.duration);
     }
 
-    function rewardPerToken(uint256 planIndex) view returns (uint256) {
-        return (rewardAmount.div(totalTokenStaked).div(duration));
+    function rewardPerToken(uint256 planIndex) view public returns (uint256) {
+        Plan memory plan = Plans[planIndex];
+        return (plan.rewardAmount.div(plan.totalTokenStaked).div(plan.duration));
     }
 
     function totalSupply(uint256 planIndex) external view returns (uint256) {
@@ -183,11 +184,11 @@ contract Farm is IFarm, Ownable {
 
     function balanceOf(uint256 planIndex, address account) external view returns (uint256) {
         require(address != 0);
-        Plan plan = Plans[planIndex];
+        Plan memory plan = Plans[planIndex];
         return plan.startingIntegral[account].tokenAmount;
     }
 
-    function getID(uint256 planIndex) view returns (uint256) {
+    function getID(uint256 planIndex) view public returns (uint256) {
         return Plans[planIndex].addressToId[msg.sender];
     }
 }
