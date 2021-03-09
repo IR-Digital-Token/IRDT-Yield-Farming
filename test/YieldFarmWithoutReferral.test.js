@@ -5,7 +5,7 @@ import {norm_test_cases} from "./testCaseData/normTestCases";
 import {errTypes, tryCatch} from "./utils/exceptionHandler";
 import {reenter_test_cases} from "./testCaseData/reenterTestCases";
 import {referral_test_cases} from "./testCaseData/referralTestCases";
-
+import {referral_reenter_test_cases} from "./testCaseData/referralReenterTestCases"
 require("chai")
     .use(require("chai-as-promised"))
     .should();
@@ -72,6 +72,8 @@ contract("TokenFarm", ([owner, investor]) => {
     describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
 
     describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
+
+    describe("Referral Reenter Scenarios Testing", testerFunc(referral_reenter_test_cases))
 
     describe("Token Farm deployment", async () => {
         it("has a name", async () => {
