@@ -183,7 +183,7 @@ contract Farm is IFarm, Ownable {
 
     function balanceOf(uint256 planIndex, address account) external view returns (uint256) {
         require(address != 0);
-        Plan plan = Plans[planIndex];
+        Plan memory plan = Plans[planIndex];
         return plan.startingIntegral[account].tokenAmount;
     }
 
