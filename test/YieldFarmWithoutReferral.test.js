@@ -2,12 +2,15 @@
 const FarmContract = artifacts.require("Farm");
 const DaiToken = artifacts.require("DaiToken");
 const DappToken = artifacts.require("DappToken");
+let { advanceTime } = require("./utils/timeController.js");
+let { advanceBlock } = require("./utils/timeController.js");
+const {time} = require('@openzeppelin/test-helpers');
+const { norm_test_cases } = require("./testCaseData/normTestCases");
+let { errTypes, tryCatch } = require("./utils/exceptionHandler");
+let { reenter_test_cases } = require("./testCaseData/reenterTestCases");
+let { referral_test_cases } = require("./testCaseData/referralTestCases");
+let { referral_reenter_test_cases } = require("./testCaseData/referralReenterTestCases");
 
-import {norm_test_cases} from "./testCaseData/normTestCases";
-import {errTypes, tryCatch} from "./utils/exceptionHandler";
-import {reenter_test_cases} from "./testCaseData/reenterTestCases";
-import {referral_test_cases} from "./testCaseData/referralTestCases";
-import {referral_reenter_test_cases} from "./testCaseData/referralReenterTestCases"
 require("chai")
     .use(require("chai-as-promised"))
     .should();
@@ -16,7 +19,7 @@ function tokens(n) {
     return web3.utils.toWei(n, "ether");
 }
 
-contract("TokenFarm", ([owner, investor]) => {
+contract("TokenFarm", (accounts) => {
     let daiToken, dappToken, tokenFarm;
     let yieldFarmingContract;
     let token, rewardToken;
@@ -25,30 +28,47 @@ contract("TokenFarm", ([owner, investor]) => {
     let testerFunc = async (testCases) => {
         for (let testCase of testCases) {
             it(testCase.name, async () => {
-                let plan = await yieldFarmingContract.addPlan(token, rewardToken, testCase.reward_amount, testCase.start_time,
-                    testCase.duration, testCase.referral_enable, testCase.referral_percent)
-                let beforeTime = 0, usersLen = 0
-                for (let time of testCase.times) {
-                    await advanceTime(time.time - beforeTime)
-                    if (time.is_stake) {
-                        // The "time.stake_num" Is Just For Reenter TestCases & It's Not Related To "userLen". For That, There Is No Need For userLen
-                        let stakeFunc = yieldFarmingContract.stake(plan, time.stake_amount, time.referrer | 0, {from: accounts[time.stake_num ? (time.stake_num - 1) : usersLen]})
+                console.log((await time.latest()).toString());
+                await dappToken.approve(yieldFarmingContract.address, testCase.reward_amount,{from: accounts[0]});
+                await daiToken.approve(yieldFarmingContract.address, testCase.times[0].stake_amount,{from: accounts[0]});
+                await yieldFarmingContract.addPlan(daiToken.address, dappToken.address, testCase.reward_amount, testCase.start_time,
+                    testCase.duration, testCase.referral_enable, testCase.referral_percent, testCase.times[0].stake_amount,{from: accounts[0]});
+                let beforeTime = testCase.start_time, usersLen = 1
+                plan = 0
+                for (let scene of testCase.times.slice(1)) {
+                    beforeTime = await time.latest()
+                    console.log(scene.time - beforeTime);
+                    await advanceTime(scene.time - beforeTime)
 
-                        if (time.is_reenter) {
+                    var block = await web3.eth.getBlock(web3.eth.blockNumber);
+                    // console.log(block.timestamp)
+                    console.log((await time.latest()).toString());
+
+                    if (scene.is_stake) {
+                        // console.log(accounts[time.stake_num ? (time.stake_num - 1) : usersLen]);
+                        await daiToken.approve(yieldFarmingContract.address, scene.stake_amount,{from: accounts[scene.stake_num ? (scene.stake_num - 1) : usersLen]});
+
+                        // The "time.stake_num" Is Just For Reenter TestCases & It's Not Related To "userLen". For That, There Is No Need For userLen
+                        let stakeFunc = yieldFarmingContract.stake(plan, scene.stake_amount, scene.referrer | 0, { from: accounts[scene.stake_num ? (scene.stake_num - 1) : usersLen] })
+
+                        if (scene.is_reenter) {
                             await tryCatch(stakeFunc, errTypes.revert);
                         } else {
                             await stakeFunc
                             usersLen++
                         }
                     } else {
-                        let unstakeAmountFunc = yieldFarmingContract.unstakeAndClaimRewards(0, {from: accounts[time.unstake_num - 1]})
-                        if (time.is_reenter) {
+                        let unstakeAmountFunc = await yieldFarmingContract.unstakeAndClaimRewards(0, { from: accounts[scene.unstake_num - 1]})
+                        if (scene.is_reenter) {
                             await tryCatch(unstakeAmountFunc, errTypes.revert);
                         } else {
-                            assert.equal(time.unstake_amount, unstakeAmount)
+                            await unstakeAmountFunc;
+                            console.log("shiii")
+                            console.log(unstakeAmountFunc);
+                            assert.equal(scene.unstake_amount, unstakeAmountFunc)
                         }
                     }
-                    beforeTime = time.time
+                    beforeTime = scene.time
                 }
             });
         }
@@ -59,17 +79,23 @@ contract("TokenFarm", ([owner, investor]) => {
         // for now, yieldFarmingContract & token & rewardToken NeedsTo BeSet
 
         // init contract for owner="The Last Account Of BlockChain"
+        // console.log(time.time - beforeTime);
         
-        yieldFarmingContract = await FarmContract.new({from: owner});
-        console.log(accounts[0]);
-        daiToken = await DaiToken.new({from: owner});
-        dappToken = await DappToken.new({from: owner});
-
+        yieldFarmingContract = await FarmContract.new({ from: accounts[0] });
+        // console.log(accounts[0]);
+        daiToken = await DaiToken.new({ from: accounts[0] });
+        dappToken = await DaiToken.new({ from: accounts[0] });
+        console.log(accounts);
         totalBalance = 1000000
-        for (let account in accounts) {
-            await dappToken.transfer(account, tokens(totalBalance.accounts.length), {from: owner})
-            await daiToken.transfer(account, tokens(totalBalance.accounts.length), {from: owner})
-        }
+        accounts.slice(1,3).forEach(account => {
+            if (account !== accounts[0]) {
+                console.log(account);
+                // dappToken.transfer(account, 1000, { from: accounts[0] })
+                daiToken.transfer(account, 1000, { from: accounts[0] })
+            }
+            
+        });
+
         // Load Contracts
         // daiToken = await DaiToken.new();
         // dappToken = await DappToken.new();
@@ -95,11 +121,11 @@ contract("TokenFarm", ([owner, investor]) => {
 
     describe("Norm Scenarios Testing", testerFunc(norm_test_cases))
 
-    describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
+    // describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
 
-    describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
+    // describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
 
-    describe("Referral Reenter Scenarios Testing", testerFunc(referral_reenter_test_cases))
+    // describe("Referral Reenter Scenarios Testing", testerFunc(referral_reenter_test_cases))
 
     describe("Token Farm deployment", async () => {
         it("has a name", async () => {
@@ -129,13 +155,13 @@ contract("TokenFarm", ([owner, investor]) => {
             await daiToken.approve(tokenFarm.address, tokens("100"), {
                 from: investor
             });
-            await tokenFarm.stakeTokens(tokens("100"), {from: investor});
+            await tokenFarm.stakeTokens(tokens("100"), { from: investor });
 
             // Ensure that only onwer can issue tokens
-            await tokenFarm.issueTokens({from: investor}).should.be.rejected;
+            await tokenFarm.issueTokens({ from: investor }).should.be.rejected;
 
             // Unstake tokens
-            await tokenFarm.unstakeTokens({from: investor});
+            await tokenFarm.unstakeTokens({ from: investor });
 
             result = await daiToken.balanceOf(tokenFarm.address);
             assert.equal(

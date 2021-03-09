@@ -9,20 +9,25 @@ const mnemonic = fs
 module.exports = {
     networks: {
         development: {
-            host: "127.0.0.1", // Localhost (default: none)
-            port: 8545, // Standard BSC port (default: none)
-            network_id: "*" // Any network (default: none)
+            host: "127.0.0.1",
+            port: 7545,
+            network_id: "*"
         },
         testnet: {
-            provider: () =>
-                new HDWalletProvider(
-                    mnemonic,
-                    `https://data-seed-prebsc-1-s1.binance.org:8545`
-                ),
-            network_id: 97,
+            host: "127.0.0.1", // Localhost (default: none)
+            port: 9545, // Standard BSC port (default: none)
+            network_id: "*" ,// Any network (default: none)
+            // provider: () =>
+            //     new HDWalletProvider(
+            //         mnemonic,
+            //         `https://data-seed-prebsc-1-s1.binance.org:8545`
+            //     ),
+            // network_id: 97,
             confirmations: 10,
             timeoutBlocks: 200,
-            skipDryRun: true
+            skipDryRun: true,
+            networkCheckTimeout: 100000,
+            gasPrice: 10000000000,
         },
         bsc: {
             provider: () =>
@@ -41,7 +46,13 @@ module.exports = {
 
     // Configure your compilers
     compilers: {
-        solc: {}
+        solc: {
+            optimizer: {
+              enabled: true,
+              runs: 200
+            },
+            version: "^0.5.16"
+          }
     }
     ,
     contracts_directory: "./src/contracts/",

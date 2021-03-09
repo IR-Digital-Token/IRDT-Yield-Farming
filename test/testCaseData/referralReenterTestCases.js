@@ -1,7 +1,7 @@
 /* eslint-disable */
-import {norm_duration, norm_reward_amount, norm_start_time, delta_t} from "./normData";
+const {norm_duration, norm_reward_amount, norm_start_time, delta_t} = require('./normData');
 
-export const referral_reenter_test_cases = [
+module.exports.referral_reenter_test_cases = [
     {
         name: "A Normal Test With Just One Stoker",
         reward_amount: norm_reward_amount,

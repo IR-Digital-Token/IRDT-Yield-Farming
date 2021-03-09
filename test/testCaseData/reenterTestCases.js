@@ -1,7 +1,7 @@
 /* eslint-disable */
-import {norm_duration, norm_reward_amount, norm_start_time, delta_t} from "./normData";
+const {norm_duration, norm_reward_amount, norm_start_time, delta_t} = require('./normData');
 
-export const reenter_test_cases = [
+module.exports.reenter_test_cases = [
     {
         name: "One Stoker &, UnStake With NonStake Account, & Stakes After Duration",
         reward_amount: norm_reward_amount,

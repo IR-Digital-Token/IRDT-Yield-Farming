@@ -1,8 +1,6 @@
 pragma solidity ^0.5.16;
 
-
-import './Interfaces/IFarm.sol';
-import './Interfaces/IERC210.sol';
+import './Interfaces/IERC20.sol';
 
 library SafeMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -113,7 +111,7 @@ contract Farm is Ownable {
     function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent, uint256 initialStakingAmount) public onlyOwner {
         Plan memory plan = Plan({
             integralOfRewardPerToken  : 0,
-            idCounter : 0,
+            idCounter : 2,
             stakingTokenAddress : token,
             rewardTokenAddress : rewardToken,
             stakingToken : IERC20(token),
@@ -129,9 +127,8 @@ contract Farm is Ownable {
         });
         
         
-        addressToId[plans.length][msg.sender] = 0;
-        idToAddress[plans.length][0] = msg.sender;
-        plan.idCounter++; 
+        addressToId[plans.length][msg.sender] = 1;
+        idToAddress[plans.length][1] = msg.sender;
         plan.rewardToken.transferFrom(msg.sender, address(this), rewardAmount);
         plan.stakingToken.transferFrom(msg.sender, address(this), initialStakingAmount);
         User memory newUser = User(0, msg.sender, initialStakingAmount);
@@ -139,7 +136,7 @@ contract Farm is Ownable {
         plans.push(plan);
     }
 
-    function stake(uint256 planIndex, uint256 amount, uint256 referrerID) public {
+    function stake(uint256 planIndex, uint256 amount, uint256 referrerID) public returns(uint256 id) {
         Plan storage plan = plans[planIndex];
         require(users[planIndex][msg.sender].tokenAmount == 0);
         require(plan.idCounter > referrerID , "referrerID is not valid");
@@ -153,22 +150,56 @@ contract Farm is Ownable {
         addressToId[planIndex][msg.sender] = plan.idCounter;
         idToAddress[planIndex][plan.idCounter] = msg.sender;
         plan.idCounter++;
+        return(plan.idCounter - 1);
     }
-
-    function unstakeAndClaimRewards(uint256 planIndex) public {
+ function uint2str(
+  uint256 _i
+)
+  internal
+  pure
+  returns (string memory str)
+{
+  if (_i == 0)
+  {
+    return "0";
+  }
+  uint256 j = _i;
+  uint256 length;
+  while (j != 0)
+  {
+    length++;
+    j /= 10;
+  }
+  bytes memory bstr = new bytes(length);
+  uint256 k = length;
+  j = _i;
+  while (j != 0)
+  {
+    bstr[--k] = bytes1(uint8(48 + j % 10));
+    j /= 10;
+  }
+  str = string(bstr);
+}
+    function unstakeAndClaimRewards(uint256 planIndex) public returns(uint256 reward) {
         Plan storage plan = plans[planIndex];
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0);
+        // require(1>2,uint2str(block.timestamp));
+        
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
         plan.prevTimeStake = block.timestamp;
         plan.totalTokenStaked = plan.totalTokenStaked.sub(user.tokenAmount);
-        uint256 reward = (plan.integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
+        reward = plan.integralOfRewardPerToken.sub(user.startingIntegral).mul(user.tokenAmount);
+        // require(1>2,uint2str(plan.integralOfRewardPerToken.sub(user.startingIntegral)));
+       
+
         plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
         if(plan.referralEnable){
             uint256 referralReward = (reward.mul(plan.referralPercent)).div(100);
             reward = reward.sub(referralReward);
             plan.rewardToken.transfer(user.referrer, referralReward);
         }
+        
         plan.rewardToken.transfer(msg.sender, reward);
         plan.stakingToken.transfer(msg.sender, user.tokenAmount);
         user.tokenAmount = 0;
