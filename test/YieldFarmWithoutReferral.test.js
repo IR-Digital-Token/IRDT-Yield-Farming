@@ -59,8 +59,10 @@ contract("TokenFarm", ([owner, investor]) => {
         // for now, yieldFarmingContract & token & rewardToken NeedsTo BeSet
 
         // init contract for owner="The Last Account Of BlockChain"
-        yieldFarmingContract = await FarmContract.new({from: owner})
-        daiToken = await DaiToken.new({from: owner})
+        
+        yieldFarmingContract = await FarmContract.new({from: owner});
+        console.log(accounts[0]);
+        daiToken = await DaiToken.new({from: owner});
         dappToken = await DappToken.new({from: owner});
 
         totalBalance = 1000000
