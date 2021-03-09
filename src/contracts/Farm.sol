@@ -1,8 +1,8 @@
-pragma solidity >=0.4.22 <0.9.0;
+pragma solidity ^0.5.4;
+
 
 import './Interfaces/IFarm.sol';
 import './Interfaces/IERC20.sol';
-
 
 library SafeMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -75,7 +75,7 @@ contract Ownable {
 }
 
 
-contract Farm is IFarm, Ownable {
+contract Farm is Ownable, IFarm {
     using SafeMath for uint256;
 
     struct User {
@@ -98,17 +98,19 @@ contract Farm is IFarm, Ownable {
         uint256 referralPercent;
         uint256 startTime;
         uint256 prevTimeStake;
-        mapping(address => User) users;
         uint256 idCounter;
-        mapping(address => uint256) addressToId;
-        mapping(uint256 => address) idToAddress;
     }
 
-    Plan[] private Plans;
+    mapping(uint256 => mapping(address => uint256)) addressToId;
+    mapping(uint256 => mapping(uint256 => address)) idToAddress;
+    mapping(uint256 => mapping(address => User)) users;
+    Plan[] private plans;
 
     // Mutative
     function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent, uint256 initialStakingAmount) public onlyOwner {
         Plan memory plan = Plan({
+            integralOfRewardPerToken  : 0,
+            idCounter : 0,
             stakingTokenAddress : token,
             rewardTokenAddress : rewardToken,
             stakingToken : IERC20(token),
@@ -122,37 +124,40 @@ contract Farm is IFarm, Ownable {
             prevTimeStake : startTime,
             totalTokenStaked: initialStakingAmount
         });
-        plan.addressToId[msg.sender] = 0;
-        plan.idToAddress[0] = msg.sender;
+        
+        
+        addressToId[plans.length][msg.sender] = 0;
+        idToAddress[plans.length][0] = msg.sender;
         plan.idCounter++; 
-        plan.rewardToken.transferFrom(msg.sender, this, rewardAmount);
-        plan.stakingToken.transferFrom(msg.sender, this, initialStakingAmount);
+        plan.rewardToken.transferFrom(msg.sender, address(this), rewardAmount);
+        plan.stakingToken.transferFrom(msg.sender, address(this), initialStakingAmount);
         User memory newUser = User(0, msg.sender, initialStakingAmount);
-        plan.users[msg.sender] = newUser;
-        Plans.push(plan);
+        users[plans.length][msg.sender] = newUser;
+        plans.push(plan);
     }
 
-    function stake(uint256 planIndex, uint256 amount, uint256 referrer) public {
-        Plan storage plan = Plans[planIndex];
-        require(plan.users[msg.sender].tokenAmount == 0);
-        plan.stakingToken.transferFrom(msg.sender, this, amount);
-        plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((now.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
-        plan.prevTimeStake = now;
+    function stake(uint256 planIndex, uint256 amount, uint256 referrerID) public {
+        Plan storage plan = plans[planIndex];
+        require(users[planIndex][msg.sender].tokenAmount == 0);
+        require(plan.idCounter > referrerID , "referrerID is not valid");
+        plan.stakingToken.transferFrom(msg.sender, address(this), amount);
+        plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
+        plan.prevTimeStake = block.timestamp;
         plan.totalTokenStaked = plan.totalTokenStaked.add(amount);
-        address referrerAddr = plan.idToAddress[referrer];
+        address referrerAddr = idToAddress[planIndex][referrerID];
         User memory newUser = User(plan.integralOfRewardPerToken, referrerAddr, amount);
-        plan.users[msg.sender] = newUser;
-        plan.addressToId[msg.sender] = plan.idCounter;
-        plan.idToAddress[plan.idCounter] = msg.sender;
+        users[planIndex][msg.sender] = newUser;
+        addressToId[planIndex][msg.sender] = plan.idCounter;
+        idToAddress[planIndex][plan.idCounter] = msg.sender;
         plan.idCounter++;
     }
 
     function unstakeAndClaimRewards(uint256 planIndex) external {
-        Plan storage plan = Plans[planIndex];
-        User storage user = plan.users[msg.sender];
+        Plan storage plan = plans[planIndex];
+        User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0);
-        plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((now.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
-        plan.prevTimeStake = now;
+        plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
+        plan.prevTimeStake = block.timestamp;
         plan.totalTokenStaked = plan.totalTokenStaked.sub(user.tokenAmount);
         uint256 reward = (plan.integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
         plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
@@ -168,27 +173,30 @@ contract Farm is IFarm, Ownable {
 
     // Views
     function getPlanData(uint256 planIndex) view public returns (address, address, uint256, uint256, uint256, uint256, uint256){
-        Plan memory plan = Plans[planIndex];
+        Plan memory plan = plans[planIndex];
         return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.totalTokenStaked, plan.rewardAmount, plan.referralPercent,plan.startTime, plan.duration);
     }
 
     function rewardPerToken(uint256 planIndex) view public returns (uint256) {
-        Plan memory plan = Plans[planIndex];
+        Plan memory plan = plans[planIndex];
         return (plan.rewardAmount.div(plan.totalTokenStaked).div(plan.duration));
     }
 
-    function totalSupply(uint256 planIndex) external view returns (uint256) {
-        Plan memory plan = Plans[planIndex];
+    function totalSupply(uint256 planIndex) public view returns (uint256) {
+        Plan memory plan = plans[planIndex];
         return plan.totalTokenStaked;
     }
 
-    function balanceOf(uint256 planIndex, address account) external view returns (uint256) {
-        require(address != 0);
-        Plan memory plan = Plans[planIndex];
-        return plan.startingIntegral[account].tokenAmount;
+    function getUserData(uint256 planIndex, address account) public view returns (uint256 stakingAmount, uint256 rewardAmount) {
+        Plan memory plan = plans[planIndex];
+        User memory user = users[planIndex][account];
+        require(user.tokenAmount > 0);
+        uint256 integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
+        uint256 reward = (integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
+        return (user.tokenAmount, reward);
     }
 
     function getID(uint256 planIndex) view public returns (uint256) {
-        return Plans[planIndex].addressToId[msg.sender];
+        return addressToId[planIndex][msg.sender];
     }
 }
