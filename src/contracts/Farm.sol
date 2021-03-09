@@ -1,4 +1,4 @@
-pragma solidity 5.0;
+pragma solidity >=0.4.22 <0.9.0;
 
 import './Interfaces/IFarm.sol';
 import './Interfaces/IERC20.sol';
@@ -120,7 +120,7 @@ contract Farm is IFarm, Ownable {
             referralPercent : referralPercent,
             startTime: startTime,
             prevTimeStake : startTime,
-            totalTokenStaked: initialStakingAmount,
+            totalTokenStaked: initialStakingAmount
         });
         plan.addressToId[msg.sender] = 0;
         plan.idToAddress[0] = msg.sender;
@@ -132,7 +132,7 @@ contract Farm is IFarm, Ownable {
         Plans.push(plan);
     }
 
-    function stake(uint256 planIndex, uint256 amount, uint256 referrer) {
+    function stake(uint256 planIndex, uint256 amount, uint256 referrer) public {
         Plan storage plan = Plans[planIndex];
         require(plan.users[msg.sender].tokenAmount == 0);
         plan.stakingToken.transferFrom(msg.sender, this, amount);
