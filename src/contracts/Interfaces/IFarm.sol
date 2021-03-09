@@ -1,6 +1,6 @@
 pragma solidity >=0.4.22 <0.9.0;
 
-interface IStakingRewards {
+interface IFarm {
     // Mutative
     function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool refferalEnable, uint256 referalPercent) external;
 
