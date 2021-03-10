@@ -200,7 +200,7 @@ contract Farm is Ownable {
             plan.rewardToken.transfer(user.referrer, referralReward);
         }
         
-        plan.rewardToken.transfer(msg.sender, reward);
+        plan.rewardToken.transfer(msg.sender, reward.div(1e18));
         plan.stakingToken.transfer(msg.sender, user.tokenAmount);
         user.tokenAmount = 0;
     }
@@ -213,7 +213,7 @@ contract Farm is Ownable {
 
     function rewardPerToken(uint256 planIndex) view public returns (uint256) {
         Plan memory plan = plans[planIndex];
-        return (plan.rewardAmount.div(plan.totalTokenStaked).div(plan.duration));
+        return (plan.rewardAmount.mul(1e18).div(plan.totalTokenStaked).div(plan.duration));
     }
 
     function totalSupply(uint256 planIndex) public view returns (uint256) {
