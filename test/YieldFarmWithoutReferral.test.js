@@ -58,14 +58,14 @@ contract("TokenFarm", (accounts) => {
                             usersLen++
                         }
                     } else {
+                        let unstakeAmountFuncValue = await yieldFarmingContract.unstakeAndClaimRewards.call(0, { from: accounts[scene.unstake_num - 1]})
                         let unstakeAmountFunc = await yieldFarmingContract.unstakeAndClaimRewards(0, { from: accounts[scene.unstake_num - 1]})
                         if (scene.is_reenter) {
                             await tryCatch(unstakeAmountFunc, errTypes.revert);
                         } else {
-                            await unstakeAmountFunc;
                             console.log("shiii")
-                            console.log(unstakeAmountFunc);
-                            assert.equal(scene.unstake_amount, unstakeAmountFunc)
+                            console.log(unstakeAmountFuncValue/1e18);
+                            assert.equal(scene.unstake_amount, unstakeAmountFuncValue/1e18)
                         }
                     }
                     beforeTime = scene.time
@@ -85,15 +85,10 @@ contract("TokenFarm", (accounts) => {
         // console.log(accounts[0]);
         daiToken = await DaiToken.new({ from: accounts[0] });
         dappToken = await DaiToken.new({ from: accounts[0] });
-        console.log(accounts);
         totalBalance = 1000000
-        accounts.slice(1,3).forEach(account => {
-            if (account !== accounts[0]) {
-                console.log(account);
-                // dappToken.transfer(account, 1000, { from: accounts[0] })
-                daiToken.transfer(account, 1000, { from: accounts[0] })
-            }
-            
+        accounts.slice(1,10).forEach(account => {
+            // dappToken.transfer(account, 1000, { from: accounts[0] })
+            daiToken.transfer(account, 10000, { from: accounts[0] })
         });
 
         // Load Contracts
@@ -110,12 +105,12 @@ contract("TokenFarm", (accounts) => {
 
     describe("Check Balances", async () => {
         it("Check Balances Of Token", async () => {
-            for (let account in accounts) {
-                let balance = await dappToken.balanceOf[account]
-                let balance2 = await daiToken.balanceOf[account]
-                assert.equal(balance, totalBalance / accounts.length)
-                assert.equal(balance2, totalBalance / accounts.length)
-            }
+            accounts.slice(1,10).forEach(async (account) => {
+                // let balance = dappToken.balanceOf(account)
+                let balance2 = await daiToken.balanceOf(account)
+                // assert.equal(balance, 10000)
+                assert.equal(balance2, 10000)
+            });
         })
     })
 
@@ -127,62 +122,62 @@ contract("TokenFarm", (accounts) => {
 
     // describe("Referral Reenter Scenarios Testing", testerFunc(referral_reenter_test_cases))
 
-    describe("Token Farm deployment", async () => {
-        it("has a name", async () => {
-            const name = await tokenFarm.name();
-            assert.equal(name, "Dapp Token Farm");
-        });
+    // describe("Token Farm deployment", async () => {
+    //     it("has a name", async () => {
+    //         const name = await tokenFarm.name();
+    //         assert.equal(name, "Dapp Token Farm");
+    //     });
 
-        it("contract has tokens", async () => {
-            const balance = await dappToken.balanceOf(tokenFarm.address);
-            assert.equal(balance.toString(), tokens("1000000"));
-        });
-    });
+    //     it("contract has tokens", async () => {
+    //         const balance = await dappToken.balanceOf(tokenFarm.address);
+    //         assert.equal(balance.toString(), tokens("1000000"));
+    //     });
+    // });
 
-    describe("Farming tokens", async () => {
-        it("rewards investors for staking mDai tokens", async () => {
-            let result;
+    // describe("Farming tokens", async () => {
+    //     it("rewards investors for staking mDai tokens", async () => {
+    //         let result;
 
-            // Check investor balance before staking
-            result = await daiToken.balanceOf(investor);
-            assert.equal(
-                result.toString(),
-                tokens("100"),
-                "investor Mock DAI wallet balance correct before staking"
-            );
+    //         // Check investor balance before staking
+    //         result = await daiToken.balanceOf(investor);
+    //         assert.equal(
+    //             result.toString(),
+    //             tokens("100"),
+    //             "investor Mock DAI wallet balance correct before staking"
+    //         );
 
-            // Stake Mock DAI Tokens
-            await daiToken.approve(tokenFarm.address, tokens("100"), {
-                from: investor
-            });
-            await tokenFarm.stakeTokens(tokens("100"), { from: investor });
+    //         // Stake Mock DAI Tokens
+    //         await daiToken.approve(tokenFarm.address, tokens("100"), {
+    //             from: investor
+    //         });
+    //         await tokenFarm.stakeTokens(tokens("100"), { from: investor });
 
-            // Ensure that only onwer can issue tokens
-            await tokenFarm.issueTokens({ from: investor }).should.be.rejected;
+    //         // Ensure that only onwer can issue tokens
+    //         await tokenFarm.issueTokens({ from: investor }).should.be.rejected;
 
-            // Unstake tokens
-            await tokenFarm.unstakeTokens({ from: investor });
+    //         // Unstake tokens
+    //         await tokenFarm.unstakeTokens({ from: investor });
 
-            result = await daiToken.balanceOf(tokenFarm.address);
-            assert.equal(
-                result.toString(),
-                tokens("0"),
-                "Token Farm Mock DAI balance correct after staking"
-            );
+    //         result = await daiToken.balanceOf(tokenFarm.address);
+    //         assert.equal(
+    //             result.toString(),
+    //             tokens("0"),
+    //             "Token Farm Mock DAI balance correct after staking"
+    //         );
 
-            result = await tokenFarm.stakingBalance(investor);
-            assert.equal(
-                result.toString(),
-                tokens("0"),
-                "investor staking balance correct after staking"
-            );
+    //         result = await tokenFarm.stakingBalance(investor);
+    //         assert.equal(
+    //             result.toString(),
+    //             tokens("0"),
+    //             "investor staking balance correct after staking"
+    //         );
 
-            result = await tokenFarm.isStaking(investor);
-            assert.equal(
-                result.toString(),
-                "false",
-                "investor staking status correct after staking"
-            );
-        });
-    });
+    //         result = await tokenFarm.isStaking(investor);
+    //         assert.equal(
+    //             result.toString(),
+    //             "false",
+    //             "investor staking status correct after staking"
+    //         );
+    //     });
+    // });
 });

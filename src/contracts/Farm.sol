@@ -116,7 +116,7 @@ contract Farm is Ownable {
             rewardTokenAddress : rewardToken,
             stakingToken : IERC20(token),
             rewardToken : IERC20(rewardToken),
-            remainingRewardAmount : rewardAmount,
+            remainingRewardAmount : rewardAmount.mul(1e18),
             rewardAmount : rewardAmount,
             duration : duration,
             referralEnable : referralEnable,
@@ -184,22 +184,25 @@ contract Farm is Ownable {
         Plan storage plan = plans[planIndex];
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0);
-        // require(1>2,uint2str(block.timestamp));
-        
-        plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
+        uint256 dur = block.timestamp.sub(plan.prevTimeStake);
+        if(plan.startTime.add(plan.duration) < block.timestamp)
+            dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
+        plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex)));
         plan.prevTimeStake = block.timestamp;
+
         plan.totalTokenStaked = plan.totalTokenStaked.sub(user.tokenAmount);
+
         reward = plan.integralOfRewardPerToken.sub(user.startingIntegral).mul(user.tokenAmount);
         // require(1>2,uint2str(plan.integralOfRewardPerToken.sub(user.startingIntegral)));
-       
+
 
         plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
         if(plan.referralEnable){
             uint256 referralReward = (reward.mul(plan.referralPercent)).div(100);
             reward = reward.sub(referralReward);
-            plan.rewardToken.transfer(user.referrer, referralReward);
+            plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
         }
-        
+
         plan.rewardToken.transfer(msg.sender, reward.div(1e18));
         plan.stakingToken.transfer(msg.sender, user.tokenAmount);
         user.tokenAmount = 0;
@@ -213,6 +216,7 @@ contract Farm is Ownable {
 
     function rewardPerToken(uint256 planIndex) view public returns (uint256) {
         Plan memory plan = plans[planIndex];
+
         return (plan.rewardAmount.mul(1e18).div(plan.totalTokenStaked).div(plan.duration));
     }
 
