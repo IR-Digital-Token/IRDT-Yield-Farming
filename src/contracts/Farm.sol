@@ -140,6 +140,7 @@ contract Farm is Ownable {
         Plan storage plan = plans[planIndex];
         require(users[planIndex][msg.sender].tokenAmount == 0);
         require(plan.idCounter > referrerID , "referrerID is not valid");
+        require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
         plan.stakingToken.transferFrom(msg.sender, address(this), amount);
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
         plan.prevTimeStake = block.timestamp;
@@ -187,15 +188,11 @@ contract Farm is Ownable {
         uint256 dur = block.timestamp.sub(plan.prevTimeStake);
         if(plan.startTime.add(plan.duration) < block.timestamp){
             require(plan.startTime.add(plan.duration) > plan.prevTimeStake,uint2str(plan.prevTimeStake));
-
             dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
 
         }
-        
-
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex)));
-        if(block.timestamp <= plan.startTime.add(plan.duration))
-            plan.prevTimeStake = block.timestamp;
+        plan.prevTimeStake = plan.prevTimeStake.add(dur);
 
         plan.totalTokenStaked = plan.totalTokenStaked.sub(user.tokenAmount);
 
