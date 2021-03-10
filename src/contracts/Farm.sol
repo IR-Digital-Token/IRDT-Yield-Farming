@@ -141,6 +141,7 @@ contract Farm is Ownable {
         require(users[planIndex][msg.sender].tokenAmount == 0);
         require(plan.idCounter > referrerID , "referrerID is not valid");
         require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
+        require(block.timestamp > plan.startTime,"Too Early");
         plan.stakingToken.transferFrom(msg.sender, address(this), amount);
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
         plan.prevTimeStake = block.timestamp;
@@ -183,6 +184,7 @@ contract Farm is Ownable {
 }
     function unstakeAndClaimRewards(uint256 planIndex) public returns(uint256 reward) {
         Plan storage plan = plans[planIndex];
+        require(block.timestamp > plan.startTime,"Too Early");
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0);
         uint256 dur = block.timestamp.sub(plan.prevTimeStake);
