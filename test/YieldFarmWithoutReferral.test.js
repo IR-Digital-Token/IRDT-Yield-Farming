@@ -39,9 +39,7 @@ contract("TokenFarm", (accounts) => {
                     beforeTime = await time.latest()
                     console.log(scene.time - beforeTime);
                     await advanceTime(scene.time - beforeTime)
-
                     var block = await web3.eth.getBlock(web3.eth.blockNumber);
-                    // console.log(block.timestamp)
                     console.log((await time.latest()).toString());
 
                     if (scene.is_stake) {

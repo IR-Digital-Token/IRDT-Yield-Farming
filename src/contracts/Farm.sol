@@ -185,15 +185,21 @@ contract Farm is Ownable {
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0);
         uint256 dur = block.timestamp.sub(plan.prevTimeStake);
-        if(plan.startTime.add(plan.duration) < block.timestamp)
+        if(plan.startTime.add(plan.duration) < block.timestamp){
+            require(plan.startTime.add(plan.duration) > plan.prevTimeStake,uint2str(plan.prevTimeStake));
+
             dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
+
+        }
+        
+
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex)));
-        plan.prevTimeStake = block.timestamp;
+        if(block.timestamp <= plan.startTime.add(plan.duration))
+            plan.prevTimeStake = block.timestamp;
 
         plan.totalTokenStaked = plan.totalTokenStaked.sub(user.tokenAmount);
 
         reward = plan.integralOfRewardPerToken.sub(user.startingIntegral).mul(user.tokenAmount);
-        // require(1>2,uint2str(plan.integralOfRewardPerToken.sub(user.startingIntegral)));
 
 
         plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
