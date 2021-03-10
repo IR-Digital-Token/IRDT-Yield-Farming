@@ -10,6 +10,7 @@ let { errTypes, tryCatch } = require("./utils/exceptionHandler");
 let { reenter_test_cases } = require("./testCaseData/reenterTestCases");
 let { referral_test_cases } = require("./testCaseData/referralTestCases");
 let { referral_reenter_test_cases } = require("./testCaseData/referralReenterTestCases");
+const { assert } = require("chai");
 
 require("chai")
     .use(require("chai-as-promised"))
@@ -28,23 +29,30 @@ contract("TokenFarm", (accounts) => {
     let testerFunc = async (testCases) => {
         for (let testCase of testCases) {
             it(testCase.name, async () => {
-                console.log((await time.latest()).toString());
+                await advanceTime(10000000);
+
+                console.log((await time.latest()).toString()+"start");
                 await dappToken.approve(yieldFarmingContract.address, testCase.reward_amount,{from: accounts[0]});
                 await daiToken.approve(yieldFarmingContract.address, testCase.times[0].stake_amount,{from: accounts[0]});
+                console.log((await time.latest()).toString()+" addplan Time");
                 await yieldFarmingContract.addPlan(daiToken.address, dappToken.address, testCase.reward_amount, testCase.start_time,
                     testCase.duration, testCase.referral_enable, testCase.referral_percent, testCase.times[0].stake_amount,{from: accounts[0]});
-                let beforeTime = testCase.start_time, usersLen = 1
+                var usersLen = 1
                 plan = 0
+                // console.log(await yieldFarmingContract.getPlanData.call(0))
                 for (let scene of testCase.times.slice(1)) {
-                    beforeTime = await time.latest()
-                    console.log(scene.time - beforeTime);
-                    await advanceTime(scene.time - beforeTime)
-                    var block = await web3.eth.getBlock(web3.eth.blockNumber);
-                    console.log((await time.latest()).toString());
-
+                    
+                    // console.log(beforeTime);
+                    // var block = await web3.eth.getBlock(web3.eth.blockNumber);
                     if (scene.is_stake) {
                         // console.log(accounts[time.stake_num ? (time.stake_num - 1) : usersLen]);
                         await daiToken.approve(yieldFarmingContract.address, scene.stake_amount,{from: accounts[scene.stake_num ? (scene.stake_num - 1) : usersLen]});
+                        var beforeTime = await time.latest()
+                        console.log(scene.time - beforeTime+" add before stake ");
+                        await advanceTime(scene.time);
+                        // await sleep(4000);
+
+                        console.log((await time.latest()).toString()+"stake time");
 
                         // The "time.stake_num" Is Just For Reenter TestCases & It's Not Related To "userLen". For That, There Is No Need For userLen
                         let stakeFunc = yieldFarmingContract.stake(plan, scene.stake_amount, scene.referrer | 0, { from: accounts[scene.stake_num ? (scene.stake_num - 1) : usersLen] })
@@ -56,6 +64,12 @@ contract("TokenFarm", (accounts) => {
                             usersLen++
                         }
                     } else {
+                        var beforeTime = await time.latest()
+                        console.log(scene.time - beforeTime+" add before Unstake")
+                        
+                        await advanceTime(scene.time)
+
+                        console.log((await time.latest()).toString()+" unstake time");
                         let unstakeAmountFuncValue = await yieldFarmingContract.unstakeAndClaimRewards.call(0, { from: accounts[scene.unstake_num - 1]})
                         let unstakeAmountFunc = await yieldFarmingContract.unstakeAndClaimRewards(0, { from: accounts[scene.unstake_num - 1]})
                         if (scene.is_reenter) {
@@ -63,16 +77,20 @@ contract("TokenFarm", (accounts) => {
                         } else {
                             console.log("shiii")
                             console.log(unstakeAmountFuncValue/1e18);
-                            assert.equal(scene.unstake_amount, unstakeAmountFuncValue/1e18)
+                            function checkvalue(val){
+                                if(Math.abs(val)<0.0001)
+                                    return 0
+                                return val
+                            }
+                            assert.equal(checkvalue(scene.unstake_amount-unstakeAmountFuncValue/1e18),0)
                         }
                     }
-                    beforeTime = scene.time
                 }
             });
         }
     }
-
-    before(async () => {
+    
+    beforeEach(async () => {
         //todo
         // for now, yieldFarmingContract & token & rewardToken NeedsTo BeSet
 
@@ -82,7 +100,7 @@ contract("TokenFarm", (accounts) => {
         yieldFarmingContract = await FarmContract.new({ from: accounts[0] });
         // console.log(accounts[0]);
         daiToken = await DaiToken.new({ from: accounts[0] });
-        dappToken = await DaiToken.new({ from: accounts[0] });
+        dappToken = await DappToken.new({ from: accounts[0] });
         totalBalance = 1000000
         accounts.slice(1,10).forEach(account => {
             // dappToken.transfer(account, 1000, { from: accounts[0] })
