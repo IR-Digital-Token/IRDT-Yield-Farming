@@ -133,17 +133,6 @@ contract Farm is Ownable {
 
     
     // Mutative
-    function addPlanWithPermit(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent, uint256 initialStakingAmount,
-        uint deadlineRT, uint8 vRT, bytes32 rRT, bytes32 sRT,
-        uint deadlineSt, uint8 vST, bytes32 rST, bytes32 sST)
-    public onlyOwner {
-        IERC20(rewardToken).permit(msg.sender, address(this), rewardAmount, deadlineRT, vRT, rRT, sRT);
-        IERC20(token).permit(msg.sender, address(this), initialStakingAmount, deadlineSt, vST, rST, sSt);
-        addPlan(token, rewardToken, rewardAmount, startTime, duration, referralEnable, referralPercent, initialStakingAmount);
-    }
-
-    
-
     function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent, uint256 initialStakingAmount) public onlyOwner {
         Plan memory plan = Plan({
             integralOfRewardPerToken  : 0,
@@ -175,7 +164,7 @@ contract Farm is Ownable {
 
 
     function stakeWithPermit(uint256 planIndex, uint256 amount, uint256 referrerID, uint deadlineRT, uint8 vRT, bytes32 rRT, bytes32 sRT) public returns(uint256 id) {
-        plans[planIndex].stakingToken.permit(msg.sender, address(this), rewardAmount, deadlineRT, vRT, rRT, sRT);
+        plans[planIndex].stakingToken.permit(msg.sender, address(this), amount, deadlineRT, vRT, rRT, sRT);
         stake(planIndex, amount, referrerID);
     }
     
