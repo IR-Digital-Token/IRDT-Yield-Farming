@@ -1,6 +1,28 @@
-pragma solidity ^0.5.16;
+pragma solidity ^0.5.4;
 
-import './Interfaces/IERC20.sol';
+// import './Interfaces/IERC20.sol';
+
+// pragma solidity ^0.5.16;
+
+contract IERC20 {
+    function totalSupply() external view returns (uint256);
+
+    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+
+    function balanceOf(address account) external view returns (uint256);
+
+    function transfer(address recipient, uint256 amount) external returns (bool);
+
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
 
 library SafeMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -79,8 +101,7 @@ contract Farm is Ownable {
     struct User {
         uint256 startingIntegral;
         address referrer;
-        uint256 tokenAmount;
-        
+        uint256 tokenAmount;   
     }
 
     struct Plan {
@@ -98,6 +119,7 @@ contract Farm is Ownable {
         uint256 startTime;
         uint256 prevTimeStake;
         uint256 idCounter;
+        uint256 currentUserCount;
     }
 
     mapping(uint256 => mapping(address => uint256)) addressToId;
@@ -108,7 +130,20 @@ contract Farm is Ownable {
     constructor () public {
     }
 
+
+    
     // Mutative
+    function addPlanWithPermit(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent, uint256 initialStakingAmount,
+        uint deadlineRT, uint8 vRT, bytes32 rRT, bytes32 sRT,
+        uint deadlineSt, uint8 vST, bytes32 rST, bytes32 sST)
+    public onlyOwner {
+        IERC20(rewardToken).permit(msg.sender, address(this), rewardAmount, deadlineRT, vRT, rRT, sRT);
+        IERC20(token).permit(msg.sender, address(this), initialStakingAmount, deadlineSt, vST, rST, sSt);
+        addPlan(token, rewardToken, rewardAmount, startTime, duration, referralEnable, referralPercent, initialStakingAmount);
+    }
+
+    
+
     function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent, uint256 initialStakingAmount) public onlyOwner {
         Plan memory plan = Plan({
             integralOfRewardPerToken  : 0,
@@ -124,7 +159,8 @@ contract Farm is Ownable {
             referralPercent : referralPercent,
             startTime: startTime,
             prevTimeStake : startTime,
-            totalTokenStaked: initialStakingAmount
+            totalTokenStaked: initialStakingAmount,
+            currentUserCount: 1
         });
         
         
@@ -137,6 +173,12 @@ contract Farm is Ownable {
         plans.push(plan);
     }
 
+
+    function stakeWithPermit(uint256 planIndex, uint256 amount, uint256 referrerID, uint deadlineRT, uint8 vRT, bytes32 rRT, bytes32 sRT) public returns(uint256 id) {
+        plans[planIndex].stakingToken.permit(msg.sender, address(this), rewardAmount, deadlineRT, vRT, rRT, sRT);
+        stake(planIndex, amount, referrerID);
+    }
+    
     function stake(uint256 planIndex, uint256 amount, uint256 referrerID) public returns(uint256 id) {
         Plan storage plan = plans[planIndex];
         require(users[planIndex][msg.sender].tokenAmount == 0);
@@ -153,36 +195,11 @@ contract Farm is Ownable {
         addressToId[planIndex][msg.sender] = plan.idCounter;
         idToAddress[planIndex][plan.idCounter] = msg.sender;
         plan.idCounter++;
+        plan.currentUserCount++;
         return(plan.idCounter - 1);
     }
- function uint2str(
-  uint256 _i
-)
-  internal
-  pure
-  returns (string memory str)
-{
-  if (_i == 0)
-  {
-    return "0";
-  }
-  uint256 j = _i;
-  uint256 length;
-  while (j != 0)
-  {
-    length++;
-    j /= 10;
-  }
-  bytes memory bstr = new bytes(length);
-  uint256 k = length;
-  j = _i;
-  while (j != 0)
-  {
-    bstr[--k] = bytes1(uint8(48 + j % 10));
-    j /= 10;
-  }
-  str = string(bstr);
-}
+ 
+
     function unstakeAndClaimRewards(uint256 planIndex) public returns(uint256 reward) {
         Plan storage plan = plans[planIndex];
         require(block.timestamp > plan.startTime,"Too Early");
@@ -190,9 +207,7 @@ contract Farm is Ownable {
         require(user.tokenAmount > 0);
         uint256 dur = block.timestamp.sub(plan.prevTimeStake);
         if(plan.startTime.add(plan.duration) < block.timestamp){
-            require(plan.startTime.add(plan.duration) > plan.prevTimeStake,uint2str(plan.prevTimeStake));
             dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
-
         }
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex)));
         plan.prevTimeStake = plan.prevTimeStake.add(dur);
@@ -212,17 +227,29 @@ contract Farm is Ownable {
         plan.rewardToken.transfer(msg.sender, reward.div(1e18));
         plan.stakingToken.transfer(msg.sender, user.tokenAmount);
         user.tokenAmount = 0;
+        plan.currentUserCount--;
     }
 
     // Views
-    function getPlanData(uint256 planIndex) view public returns (address stakingTokenAddress, address rewardTokenAddress, uint256 totalTokenStaked, uint256 rewardAmount, uint256 referralPercent, uint256 startTime, uint256 duration){
+    function getPlanData(uint256 planIndex) view public returns (address stakingTokenAddress, address rewardTokenAddress, uint256 totalTokenStaked ,uint256 rewardAmount, uint256 remainingRewardAmount, bool referralEnable, uint256 referralPercent, uint256 startTime, uint256 duration, uint256 currentUserCount, uint256 idCounter){
         Plan memory plan = plans[planIndex];
-        return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.totalTokenStaked, plan.rewardAmount, plan.referralPercent,plan.startTime, plan.duration);
+        return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.totalTokenStaked, plan.rewardAmount, plan.remainingRewardAmount, plan.referralEnable, plan.referralPercent, plan.startTime, plan.duration, plan.currentUserCount, plan.idCounter);
+    }
+
+    function getIntegral(uint256 planIndex) public view returns (uint256) {
+        Plan memory plan = plans[planIndex];
+        if (block.timestamp < plan.startTime)
+            return 0;
+        else {
+            uint256 dur = block.timestamp.sub(plan.prevTimeStake);
+            if(plan.startTime.add(plan.duration) < block.timestamp)
+                dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
+            return plan.integralOfRewardPerToken.add((dur.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
+        }
     }
 
     function rewardPerToken(uint256 planIndex) view public returns (uint256) {
         Plan memory plan = plans[planIndex];
-
         return (plan.rewardAmount.mul(1e18).div(plan.totalTokenStaked).div(plan.duration));
     }
 
@@ -235,7 +262,13 @@ contract Farm is Ownable {
         Plan memory plan = plans[planIndex];
         User memory user = users[planIndex][account];
         require(user.tokenAmount > 0);
-        uint256 integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
+        if (block.timestamp < plan.startTime)
+            return (user.tokenAmount, 0);
+        uint256 dur = block.timestamp.sub(plan.prevTimeStake);
+        if(plan.startTime.add(plan.duration) < block.timestamp){
+            dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
+        }
+        uint256 integralOfRewardPerToken = plan.integralOfRewardPerToken.add((dur.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
         uint256 reward = (integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
         return (user.tokenAmount, reward);
     }
