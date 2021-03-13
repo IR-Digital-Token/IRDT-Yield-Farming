@@ -183,7 +183,7 @@ contract Farm is Ownable {
   }
   str = string(bstr);
 }
-    function unstakeAndClaimRewards(uint256 planIndex) public returns(uint256 reward) {
+    function unstakeAndClaimRewards(uint256 planIndex) public returns(uint256 reward, uint256 referralReward) {
         Plan storage plan = plans[planIndex];
         require(block.timestamp > plan.startTime,"Too Early");
         User storage user = users[planIndex][msg.sender];
@@ -191,9 +191,7 @@ contract Farm is Ownable {
         uint256 dur = block.timestamp.sub(plan.prevTimeStake);
         if(plan.startTime.add(plan.duration) < block.timestamp)
             dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
-        if(user.tokenAmount == 3000){
-require(1<2,uint2str(dur));
-        }
+      
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex)));
         plan.prevTimeStake = plan.prevTimeStake.add(dur);
 
@@ -202,7 +200,7 @@ require(1<2,uint2str(dur));
 
         plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
         if(plan.referralEnable){
-            uint256 referralReward = (reward.mul(plan.referralPercent)).div(100);
+            referralReward = (reward.mul(plan.referralPercent)).div(100);
             reward = reward.sub(referralReward);
             plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
         }

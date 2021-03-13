@@ -70,15 +70,17 @@ contract("TokenFarm", (accounts) => {
                         await advanceTime(scene.time)
 
                         console.log((await time.latest()).toString()+" unstake time");
-                        let unstakeAmountFuncValue = await yieldFarmingContract.unstakeAndClaimRewards.call(0, { from: accounts[scene.unstake_num - 1]})
-                        let unstakeAmountFunc = await yieldFarmingContract.unstakeAndClaimRewards(0, { from: accounts[scene.unstake_num - 1]})
+                        let unstakeAmountFuncValue = yieldFarmingContract.unstakeAndClaimRewards.call(0, { from: accounts[scene.unstake_num - 1]})
+                        let unstakeAmountFunc = yieldFarmingContract.unstakeAndClaimRewards(0, { from: accounts[scene.unstake_num - 1]})
                         if (scene.is_reenter) {
                             await tryCatch(unstakeAmountFunc, errTypes.revert);
                         } else {
+                            await unstakeAmountFuncValue
+                            await unstakeAmountFunc
                             console.log("shiii")
                             console.log(unstakeAmountFuncValue/1e18);
                             function checkvalue(val){
-                                if(Math.abs(val)<0.0001)
+                                if(Math.abs(val)<0.01)
                                     return 0
                                 return val
                             }
@@ -130,9 +132,9 @@ contract("TokenFarm", (accounts) => {
         })
     })
 
-    describe("Norm Scenarios Testing", testerFunc(norm_test_cases))
+    // describe("Norm Scenarios Testing", testerFunc(norm_test_cases))
 
-    // describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
+    describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
 
     // describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
 
