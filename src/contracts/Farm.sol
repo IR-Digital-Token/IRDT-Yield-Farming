@@ -127,6 +127,10 @@ contract Farm is Ownable {
     mapping(uint256 => mapping(address => User)) users;
     Plan[] private plans;
 
+    event AddPlan(address indexed stakingToken, address indexed rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent);
+    event Unstake(uint256 indexed planIndex, uint256 reward, uint256 referralReward);
+    event Stake(uint256 indexed planIndex, uint256 amount, uint256 referrerID);
+
     constructor () public {
     }
 
@@ -160,6 +164,7 @@ contract Farm is Ownable {
         User memory newUser = User(0, msg.sender, initialStakingAmount);
         users[plans.length][msg.sender] = newUser;
         plans.push(plan);
+        emit AddPlan(token, rewardToken, rewardAmount, startTime, duration, referralEnable, referralPercent);
     }
 
 
@@ -187,7 +192,8 @@ contract Farm is Ownable {
             plan.idCounter++;
         }
         plan.currentUserCount++;
-        return(plan.idCounter - 1);
+        emit Stake(planIndex, amount, referrerID);
+        return(addressToId[planIndex][msg.sender]);
     }
  
 
@@ -196,11 +202,10 @@ contract Farm is Ownable {
         require(block.timestamp > plan.startTime,"Too Early");
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0);
-        uint256 dur = block.timestamp.sub(plan.prevTimeStake);
-        if(plan.startTime.add(plan.duration) < block.timestamp)
-            dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
       
-        plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex)));
+        uint256 dur;
+        (plan.integralOfRewardPerToken, dur) = getIntegral(planIndex);
+
         plan.prevTimeStake = plan.prevTimeStake.add(dur);
 
         plan.totalTokenStaked = plan.totalTokenStaked.sub(user.tokenAmount);
@@ -217,6 +222,7 @@ contract Farm is Ownable {
         plan.stakingToken.transfer(msg.sender, user.tokenAmount);
         user.tokenAmount = 0;
         plan.currentUserCount--;
+        emit Unstake(planIndex, reward.div(1e18), referralReward.div(1e18));
     }
 
     // Views
@@ -225,15 +231,15 @@ contract Farm is Ownable {
         return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.totalTokenStaked, plan.rewardAmount, plan.remainingRewardAmount, plan.referralEnable, plan.referralPercent, plan.startTime, plan.duration, plan.currentUserCount, plan.idCounter);
     }
 
-    function getIntegral(uint256 planIndex) public view returns (uint256) {
+    function getIntegral(uint256 planIndex) public view returns (uint256, uint256) {
         Plan memory plan = plans[planIndex];
         if (block.timestamp < plan.startTime)
-            return 0;
+            return (0, 0);
         else {
             uint256 dur = block.timestamp.sub(plan.prevTimeStake);
             if(plan.startTime.add(plan.duration) < block.timestamp)
                 dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
-            return plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex)));
+            return (plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex))), dur);
         }
     }
 
@@ -248,19 +254,14 @@ contract Farm is Ownable {
     }
 
     function getUserData(uint256 planIndex, address account) public view returns (uint256 stakingAmount, uint256 rewardAmount) {
-        Plan memory plan = plans[planIndex];
         User memory user = users[planIndex][account];
         require(user.tokenAmount > 0);
-        if (block.timestamp < plan.startTime)
-            return (user.tokenAmount, 0);
-        uint256 dur = block.timestamp.sub(plan.prevTimeStake);
-        if(plan.startTime.add(plan.duration) < block.timestamp){
-            dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
-        }
-        uint256 integralOfRewardPerToken = plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex)));
+            
+        (uint256 integralOfRewardPerToken,) = getIntegral(planIndex);
         uint256 reward = (integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
         return (user.tokenAmount, reward);
     }
+
 
     function getID(uint256 planIndex, address addr) view public returns (uint256 id) {
         return addressToId[planIndex][addr];
