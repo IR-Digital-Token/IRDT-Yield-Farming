@@ -88,8 +88,34 @@ contract("TokenFarm", (accounts) => {
                                     return 0
                                 return val
                             }
-                            assert.equal(checkvalue(scene.unstake_amount-unstakeAmountFuncValue['0']/1e18),0)
-                            assert.equal(checkvalue(scene.unstake_amount-unstakeAmountGetter['1']/1e18),0)
+                            if(testCase.referral_enable){
+                                if(Object.keys(scene.unstake_amount).length >1){
+                                    var c = 1;
+                                    for(var key in scene.unstake_amount){
+                                        console.log(scene.unstake_amount[key])
+                                        console.log(unstakeAmountFuncValue[c]/1e18)
+
+                                        assert.equal(checkvalue(scene.unstake_amount[key] - unstakeAmountFuncValue[c]/1e18),0)
+                                        c--;
+                                    }
+                                }else{
+                                    for(var key in scene.unstake_amount){
+                                        console.log(scene.unstake_amount[key])
+                                        console.log(unstakeAmountFuncValue[0]/1e18)
+                                        console.log(unstakeAmountFuncValue[1]/1e18)
+
+                                        assert.equal(checkvalue(scene.unstake_amount[key] - unstakeAmountFuncValue[0]/1e18 - unstakeAmountFuncValue[1]/1e18),0)
+                                    }
+                                }
+                                
+                                // assert.equal(checkvalue(scene.unstake_amount[1] - unstakeAmountFuncValue['1']/1e18),0)
+                            } else {
+                                assert.equal(checkvalue(scene.unstake_amount-unstakeAmountFuncValue['0']/1e18),0)
+
+                                assert.equal(checkvalue(scene.unstake_amount-unstakeAmountGetter['1']/1e18),0)
+                            }
+                            
+
                         }
                     }
                 }
@@ -141,7 +167,7 @@ contract("TokenFarm", (accounts) => {
 
     // describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
 
-    // describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
+    describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
 
     // describe("Referral Reenter Scenarios Testing", testerFunc(referral_reenter_test_cases))
 
