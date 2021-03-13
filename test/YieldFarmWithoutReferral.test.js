@@ -68,25 +68,28 @@ contract("TokenFarm", (accounts) => {
                         console.log(scene.time - beforeTime+" add before Unstake")
                         
                         await advanceTime(scene.time)
+                        
+                        console.log((await time.latest()).toString()+" unstake time");
+
                         let unstakeAmountGetter = await yieldFarmingContract.getUserData.call(0, accounts[scene.unstake_num - 1], { from: accounts[scene.unstake_num - 1]})
                         console.log(unstakeAmountGetter)
-                        console.log((await time.latest()).toString()+" unstake time");
-                        let unstakeAmountFuncValue = yieldFarmingContract.unstakeAndClaimRewards.call(0, { from: accounts[scene.unstake_num - 1]})
+                        console.log(unstakeAmountGetter['0'].toNumber())
+                        let unstakeAmountFuncValue = await yieldFarmingContract.unstakeAndClaimRewards.call(0, { from: accounts[scene.unstake_num - 1]})
                         let unstakeAmountFunc = yieldFarmingContract.unstakeAndClaimRewards(0, { from: accounts[scene.unstake_num - 1]})
                         if (scene.is_reenter) {
                             await tryCatch(unstakeAmountFunc, errTypes.revert);
                         } else {
-                            await unstakeAmountFuncValue
                             await unstakeAmountFunc
                             console.log("shiii")
-                            console.log(unstakeAmountFuncValue/1e18);
+                            console.log(unstakeAmountFuncValue)
+                            console.log(unstakeAmountFuncValue['0']/1e18);
                             function checkvalue(val){
                                 if(Math.abs(val)<0.01)
                                     return 0
                                 return val
                             }
-                            assert.equal(checkvalue(scene.unstake_amount-unstakeAmountFuncValue/1e18),0)
-                            assert.equal(checkvalue(scene.unstake_amount-unstakeAmountGetter/1e18),0)
+                            assert.equal(checkvalue(scene.unstake_amount-unstakeAmountFuncValue['0']/1e18),0)
+                            assert.equal(checkvalue(scene.unstake_amount-unstakeAmountGetter['1']/1e18),0)
                         }
                     }
                 }
