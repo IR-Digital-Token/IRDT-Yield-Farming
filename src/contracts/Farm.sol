@@ -1,8 +1,8 @@
 pragma solidity ^0.5.4;
 
-import './Interfaces/IERC20.sol';
-import './Interfaces/Ownable.sol';
-import './Interfaces/SafeMath.sol';
+import './IERC20.sol';
+import './Ownable.sol';
+import './SafeMath.sol';
 
 contract Farm is Ownable {
     using SafeMath for uint256;
@@ -37,8 +37,8 @@ contract Farm is Ownable {
     Plan[] private plans;
 
     event AddPlan(address indexed stakingToken, address indexed rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent);
-    event Unstake(uint256 indexed planIndex, uint256 reward, uint256 referralReward);
-    event Stake(uint256 indexed planIndex, uint256 amount, uint256 referrerID);
+    event Unstake(uint256 indexed planIndex, address unStaker, uint256 reward, uint256 referralReward);
+    event Stake(uint256 indexed planIndex, address staker, uint256 amount, uint256 referrerID);
 
     constructor () public {
     }
@@ -77,17 +77,18 @@ contract Farm is Ownable {
     }
 
 
-    function stakeWithPermit(uint256 planIndex, uint256 amount, uint256 referrerID, uint deadlineRT, uint8 vRT, bytes32 rRT, bytes32 sRT) public returns(uint256 id) {
+    function stakeWithPermit(uint256 planIndex, uint256 amount, uint256 referrerID, uint256 deadlineRT, uint8 vRT, bytes32 rRT, bytes32 sRT) public returns(uint256 id) {
         plans[planIndex].stakingToken.permit(msg.sender, address(this), amount, deadlineRT, vRT, rRT, sRT);
         return stake(planIndex, amount, referrerID);
     }
     
     function stake(uint256 planIndex, uint256 amount, uint256 referrerID) public returns(uint256 id) {
+        require(users[planIndex][msg.sender].tokenAmount == 0,"Reentrant is not allowed");
         Plan storage plan = plans[planIndex];
-        require(users[planIndex][msg.sender].tokenAmount == 0);
-        require(plan.idCounter > referrerID , "referrerID is not valid");
         require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
         require(block.timestamp > plan.startTime,"Too Early");
+        if(plan.idCounter >= referrerID)
+            referrerID = 1;
         plan.stakingToken.transferFrom(msg.sender, address(this), amount);
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
         plan.prevTimeStake = block.timestamp;
@@ -101,7 +102,7 @@ contract Farm is Ownable {
             plan.idCounter++;
         }
         plan.currentUserCount++;
-        emit Stake(planIndex, amount, referrerID);
+        emit Stake(planIndex, msg.sender, amount, referrerID);
         return(addressToId[planIndex][msg.sender]);
     }
  
@@ -131,7 +132,7 @@ contract Farm is Ownable {
         plan.stakingToken.transfer(msg.sender, user.tokenAmount);
         user.tokenAmount = 0;
         plan.currentUserCount--;
-        emit Unstake(planIndex, reward.div(1e18), referralReward.div(1e18));
+        emit Unstake(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
     }
 
     // Views
