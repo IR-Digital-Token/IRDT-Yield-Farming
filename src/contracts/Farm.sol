@@ -181,9 +181,11 @@ contract Farm is Ownable {
         address referrerAddr = idToAddress[planIndex][referrerID];
         User memory newUser = User(plan.integralOfRewardPerToken, referrerAddr, amount);
         users[planIndex][msg.sender] = newUser;
-        addressToId[planIndex][msg.sender] = plan.idCounter;
-        idToAddress[planIndex][plan.idCounter] = msg.sender;
-        plan.idCounter++;
+        if (addressToId[planIndex][msg.sender] == 0) {
+            addressToId[planIndex][msg.sender] = plan.idCounter;
+            idToAddress[planIndex][plan.idCounter] = msg.sender;
+            plan.idCounter++;
+        }
         plan.currentUserCount++;
         return(plan.idCounter - 1);
     }
@@ -231,7 +233,7 @@ contract Farm is Ownable {
             uint256 dur = block.timestamp.sub(plan.prevTimeStake);
             if(plan.startTime.add(plan.duration) < block.timestamp)
                 dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
-            return plan.integralOfRewardPerToken.add((dur.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
+            return plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex)));
         }
     }
 
@@ -255,7 +257,7 @@ contract Farm is Ownable {
         if(plan.startTime.add(plan.duration) < block.timestamp){
             dur = plan.startTime.add(plan.duration).sub(plan.prevTimeStake);
         }
-        uint256 integralOfRewardPerToken = plan.integralOfRewardPerToken.add((dur.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
+        uint256 integralOfRewardPerToken = plan.integralOfRewardPerToken.add((dur).mul(rewardPerToken(planIndex)));
         uint256 reward = (integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
         return (user.tokenAmount, reward);
     }
