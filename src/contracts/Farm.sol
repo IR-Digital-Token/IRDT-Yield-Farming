@@ -126,7 +126,6 @@ contract Farm is Ownable {
     mapping(uint256 => mapping(uint256 => address)) idToAddress;
     mapping(uint256 => mapping(address => User)) users;
     Plan[] private plans;
-    
 
     event AddPlan(address indexed stakingToken, address indexed rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent);
     event Unstake(uint256 indexed planIndex, uint256 reward, uint256 referralReward);
@@ -263,11 +262,8 @@ contract Farm is Ownable {
         return (user.tokenAmount, reward);
     }
 
-    function getID( uint256 planIndex) view public returns (uint256 id) {
-        return addressToId[planIndex][msg.sender];
-    }
 
-    function getIDWithAddress(uint256 planIndex, address addr) view public returns (uint256 id) {
+    function getID(uint256 planIndex, address addr) view public returns (uint256 id) {
         return addressToId[planIndex][addr];
     }
 }
