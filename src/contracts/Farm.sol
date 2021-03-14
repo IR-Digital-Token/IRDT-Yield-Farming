@@ -37,7 +37,10 @@ contract Farm is Ownable {
     Plan[] private plans;
 
     event AddPlan(address indexed stakingToken, address indexed rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent);
-    event Unstake(uint256 indexed planIndex, address unStaker, uint256 reward, uint256 referralReward);
+    event Unstake(uint256 indexed planIndex, address unStaker, uint256 amount);
+    event ClaimReward(uint256 indexed planIndex, address unStaker, uint256 reward, uint256 referralReward);
+    event UnstakeAndClaimRewards(uint256 indexed planIndex, address unStaker, uint256 reward, uint256 referralReward, uint256 amount);
+
     event Stake(uint256 indexed planIndex, address staker, uint256 amount, uint256 referrerID);
 
     constructor () public {
@@ -83,12 +86,13 @@ contract Farm is Ownable {
     }
     
     function stake(uint256 planIndex, uint256 amount, uint256 referrerID) public returns(uint256 id) {
-        require(users[planIndex][msg.sender].tokenAmount == 0,"Reentrant is not allowed");
+        require(users[planIndex][msg.sender].referrer == address(0),"Reentrant is not allowed, use addStake function");
         Plan storage plan = plans[planIndex];
         require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
         require(block.timestamp > plan.startTime,"Too Early");
         if(plan.idCounter >= referrerID)
             referrerID = 1;
+
         plan.stakingToken.transferFrom(msg.sender, address(this), amount);
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
         plan.prevTimeStake = block.timestamp;
@@ -96,43 +100,104 @@ contract Farm is Ownable {
         address referrerAddr = idToAddress[planIndex][referrerID];
         User memory newUser = User(plan.integralOfRewardPerToken, referrerAddr, amount);
         users[planIndex][msg.sender] = newUser;
-        if (addressToId[planIndex][msg.sender] == 0) {
-            addressToId[planIndex][msg.sender] = plan.idCounter;
-            idToAddress[planIndex][plan.idCounter] = msg.sender;
-            plan.idCounter++;
-        }
+       
+        addressToId[planIndex][msg.sender] = plan.idCounter;
+        idToAddress[planIndex][plan.idCounter] = msg.sender;
+        plan.idCounter++;
+        
         plan.currentUserCount++;
         emit Stake(planIndex, msg.sender, amount, referrerID);
         return(addressToId[planIndex][msg.sender]);
     }
  
+    function addStake(uint256 planIndex, uint256 amount) public returns(uint256) {
+        Plan storage plan = plans[planIndex];
+        require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
+        require(block.timestamp > plan.startTime,"Too Early");
+        User storage user = users[planIndex][msg.sender];
+        require(users[planIndex][msg.sender].referrer != address(0),"First stake then add");
+        calculateReward(planIndex);
+        plan.stakingToken.transferFrom(msg.sender, address(this), amount);
 
-    function unstakeAndClaimRewards(uint256 planIndex) public returns(uint256 reward, uint256 referralReward) {
+        return addressToId[planIndex][msg.sender];
+
+    }
+    function unstakeAndClaimRewards(uint256 planIndex) public returns(uint256 reward, uint256 referralReward, uint256 amount) {
+        Plan storage plan = plans[planIndex];
+        User storage user = users[planIndex][msg.sender];
+        require(user.tokenAmount > 0,"You don't have any stake amount");
+        calculateReward(planIndex);
+        if(plan.referralEnable){
+            referralReward = (user.earningAmount.mul(plan.referralPercent)).div(100);
+            user.earningAmount = user.earningAmount.sub(referralReward);
+            plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
+        }
+        reward = user.earningAmount;
+        user.earningAmount = 0;
+
+        plan.rewardToken.transfer(msg.sender, reward.div(1e18));
+        plan.stakingToken.transfer(msg.sender, user.tokenAmount);
+        amount = user.tokenAmount;
+        user.tokenAmount = 0;
+        plan.currentUserCount--;
+        emit Unstake(planIndex, msg.sender, user.tokenAmount);
+        emit ClaimReward(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
+        emit UnstakeAndClaimRewards(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18), amount);
+
+    }
+
+    function unStake(uint256 planIndex) public returns(uint256 amount) {
+        Plan storage plan = plans[planIndex];
+        User storage user = users[planIndex][msg.sender];
+        require(user.tokenAmount > 0,"You don't have any stake amount");
+
+        calculateReward(planIndex);
+        plan.stakingToken.transfer(msg.sender, user.tokenAmount);
+        amount = user.tokenAmount;
+        user.tokenAmount = 0;
+        plan.currentUserCount--;
+        emit Unstake(planIndex, msg.sender, amount);
+
+    }
+    
+
+    function claimRewards(uint256 planIndex) public returns(uint256 reward, uint256 referralReward) {
+        Plan storage plan = plans[planIndex];
+        User storage user = users[planIndex][msg.sender];
+        calculateReward(planIndex);
+        if(plan.referralEnable){
+            referralReward = (user.earningAmount.mul(plan.referralPercent)).div(100);
+            user.earningAmount = user.earningAmount.sub(referralReward);
+            plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
+        }
+        reward = user.earningAmount;
+        user.earningAmount = 0;
+        plan.rewardToken.transfer(msg.sender, reward.div(1e18));
+        
+        emit ClaimReward(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
+    }
+
+    //private
+    function calculateReward(uint256 planIndex) private{
         Plan storage plan = plans[planIndex];
         require(block.timestamp > plan.startTime,"Too Early");
         User storage user = users[planIndex][msg.sender];
-        require(user.tokenAmount > 0);
-      
+        if(user.tokenAmount == 0){
+            return ;
+        }
+
         uint256 dur;
         (plan.integralOfRewardPerToken, dur) = getIntegral(planIndex);
 
         plan.prevTimeStake = plan.prevTimeStake.add(dur);
 
         plan.totalTokenStaked = plan.totalTokenStaked.sub(user.tokenAmount);
-        reward = plan.integralOfRewardPerToken.sub(user.startingIntegral).mul(user.tokenAmount);
+        uint256 reward = plan.integralOfRewardPerToken.sub(user.startingIntegral).mul(user.tokenAmount);
 
         plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
-        if(plan.referralEnable){
-            referralReward = (reward.mul(plan.referralPercent)).div(100);
-            reward = reward.sub(referralReward);
-            plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
-        }
-
-        plan.rewardToken.transfer(msg.sender, reward.div(1e18));
-        plan.stakingToken.transfer(msg.sender, user.tokenAmount);
-        user.tokenAmount = 0;
-        plan.currentUserCount--;
-        emit Unstake(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
+        user.earningAmount = user.earningAmount.add(reward);
+        
+        user.startingIntegral = plan.integralOfRewardPerToken;
     }
 
     // Views
