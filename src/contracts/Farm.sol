@@ -156,10 +156,13 @@ contract Farm is Ownable {
         Plan storage plan = plans[planIndex]; 
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0,"You don't have any stake amount");
+        require(user.tokenAmount >= unstakeAmount,"More than you staking amount");
+
         calculateReward(planIndex);
 
         plan.remainingRewardAmount = plan.remainingRewardAmount.sub(user.earningAmount);
         plan.tokenStaking = plan.tokenStaking.sub(unstakeAmount);
+        user.tokenAmount = user.tokenAmount.sub(unstakeAmount);
 
         if(plan.referralEnable){
             referralReward = (user.earningAmount.mul(plan.referralPercent)).div(100);
@@ -172,7 +175,6 @@ contract Farm is Ownable {
         plan.rewardToken.transfer(msg.sender, reward.div(1e18));
         plan.stakingToken.transfer(msg.sender, unstakeAmount);
         amount = unstakeAmount;
-        user.tokenAmount = user.tokenAmount.sub(unstakeAmount);
         if (user.tokenAmount == 0) {
             plan.currentUserCount--;
         }
