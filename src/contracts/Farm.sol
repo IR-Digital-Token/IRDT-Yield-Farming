@@ -152,14 +152,14 @@ contract Farm is Ownable {
         return addressToId[planIndex][msg.sender];
 
     }
-    function unstakeAndClaimRewards(uint256 planIndex) public returns(uint256 reward, uint256 referralReward, uint256 amount) {
-        Plan storage plan = plans[planIndex];
+    function unstakeAndClaimRewards(uint256 planIndex, uint256 unstakeAmount) public returns(uint256 reward, uint256 referralReward, uint256 amount) {
+        Plan storage plan = plans[planIndex]; 
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0,"You don't have any stake amount");
         calculateReward(planIndex);
 
         plan.remainingRewardAmount = plan.remainingRewardAmount.sub(user.earningAmount);
-        plan.tokenStaking = plan.tokenStaking.sub(user.tokenAmount);
+        plan.tokenStaking = plan.tokenStaking.sub(unstakeAmount);
 
         if(plan.referralEnable){
             referralReward = (user.earningAmount.mul(plan.referralPercent)).div(100);
@@ -170,30 +170,34 @@ contract Farm is Ownable {
         user.earningAmount = 0;
 
         plan.rewardToken.transfer(msg.sender, reward.div(1e18));
-        plan.stakingToken.transfer(msg.sender, user.tokenAmount);
-        amount = user.tokenAmount;
-        user.tokenAmount = 0;
-        plan.currentUserCount--;
+        plan.stakingToken.transfer(msg.sender, unstakeAmount);
+        amount = unstakeAmount;
+        user.tokenAmount = user.tokenAmount.sub(unstakeAmount);
+        if (user.tokenAmount == 0) {
+            plan.currentUserCount--;
+        }
         emit Unstake(planIndex, msg.sender, amount);
         emit ClaimReward(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
         emit UnstakeAndClaimRewards(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18), amount);
 
     }
 
-    function unStake(uint256 planIndex) public returns(uint256 amount) {
+    function unStake(uint256 planIndex, uint256 unstakeAmount) public returns(uint256 amount) {
         Plan storage plan = plans[planIndex];
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0,"You don't have any stake amount");
 
         calculateReward(planIndex);
-        
-        plan.tokenStaking = plan.tokenStaking.sub(user.tokenAmount);
+        user.tokenAmount = user.tokenAmount.sub(unstakeAmount);
+        plan.tokenStaking = plan.tokenStaking.sub(unstakeAmount);
 
-        plan.stakingToken.transfer(msg.sender, user.tokenAmount);
-        amount = user.tokenAmount;
-        user.tokenAmount = 0;
-        plan.currentUserCount--;
-        emit Unstake(planIndex, msg.sender, amount);
+        plan.stakingToken.transfer(msg.sender, unstakeAmount);
+        if (user.tokenAmount == 0) {
+            plan.currentUserCount--;
+        }
+        
+        emit Unstake(planIndex, msg.sender, unstakeAmount);
+        return unstakeAmount;
 
     }
     
