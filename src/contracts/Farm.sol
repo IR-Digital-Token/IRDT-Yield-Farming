@@ -77,8 +77,8 @@ contract Farm is Ownable {
     }
 
 
-    function stakeWithPermit(uint256 planIndex, uint256 amount, uint256 referrerID, uint256 deadlineRT, uint8 vRT, bytes32 rRT, bytes32 sRT) public returns(uint256 id) {
-        plans[planIndex].stakingToken.permit(msg.sender, address(this), amount, deadlineRT, vRT, rRT, sRT);
+    function stakeWithPermit(uint256 planIndex, uint256 amount, uint256 referrerID, uint256 deadlineRT, uint8 v, bytes32 r, bytes32 s) public returns(uint256 id) {
+        plans[planIndex].stakingToken.permit(msg.sender, address(this), amount, deadlineRT, v, r, s);
         return stake(planIndex, amount, referrerID);
     }
     
