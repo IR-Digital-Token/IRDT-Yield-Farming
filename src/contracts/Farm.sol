@@ -12,7 +12,6 @@ contract Farm is Ownable {
         address referrer;
         uint256 tokenAmount;   
         uint256 earningAmount;
-        uint256 totalTokenStaked;
     }
 
     struct Plan {
@@ -103,7 +102,7 @@ contract Farm is Ownable {
         plan.prevTimeStake = block.timestamp;
         plan.totalTokenStaked = plan.totalTokenStaked.add(amount);
         address referrerAddr = idToAddress[planIndex][referrerID];
-        User memory newUser = User(plan.integralOfRewardPerToken, referrerAddr, amount, 0, amount);
+        User memory newUser = User(plan.integralOfRewardPerToken, referrerAddr, amount, 0);
         users[planIndex][msg.sender] = newUser;
        
         addressToId[planIndex][msg.sender] = plan.idCounter;
@@ -132,7 +131,6 @@ contract Farm is Ownable {
         }
         plan.stakingToken.transferFrom(msg.sender, address(this), amount);
         user.tokenAmount = user.tokenAmount.add(amout); 
-        user.totalTokenStaked = user.totalTokenStaked.add(amout); 
         plan.tokenStaking = plan.tokenStaking.add(amount);
         plan.totalTokenStaked = plan.totalTokenStaked.add(amount);
         return addressToId[planIndex][msg.sender];
@@ -143,6 +141,8 @@ contract Farm is Ownable {
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0,"You don't have any stake amount");
         calculateReward(planIndex);
+
+        plan.remainingRewardAmount = plan.remainingRewardAmount.sub(user.earningAmount);
         if(plan.referralEnable){
             referralReward = (user.earningAmount.mul(plan.referralPercent)).div(100);
             user.earningAmount = user.earningAmount.sub(referralReward);
@@ -170,8 +170,6 @@ contract Farm is Ownable {
         calculateReward(planIndex);
         
         plan.tokenStaking = plan.tokenStaking.sub(user.tokenAmount);
-        plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
-
 
         plan.stakingToken.transfer(msg.sender, user.tokenAmount);
         amount = user.tokenAmount;
@@ -187,7 +185,7 @@ contract Farm is Ownable {
         User storage user = users[planIndex][msg.sender];
         calculateReward(planIndex);
         reward = user.earningAmount;
-
+        plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
         if(plan.referralEnable){
             referralReward = (reward.mul(plan.referralPercent)).div(100);
             reward = reward.sub(referralReward);
