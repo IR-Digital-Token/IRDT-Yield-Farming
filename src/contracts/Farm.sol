@@ -11,6 +11,7 @@ contract Farm is Ownable {
         uint256 startingIntegral;
         address referrer;
         uint256 tokenAmount;   
+        uint256 earningAmount;
     }
 
     struct Plan {
