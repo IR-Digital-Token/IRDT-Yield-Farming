@@ -53,6 +53,7 @@ contract Farm is Ownable {
     event UnstakeAndClaimRewards(uint256 indexed planIndex, address unStaker, uint256 reward, uint256 referralReward, uint256 amount);
 
     event Stake(uint256 indexed planIndex, address staker, uint256 amount, uint256 referrerID);
+    event AddStake(uint256 indexed planIndex, address staker, uint256 amount);
 
     constructor () public {
     }
@@ -147,6 +148,7 @@ contract Farm is Ownable {
         user.tokenAmount = user.tokenAmount.add(amount); 
         plan.tokenStaking = plan.tokenStaking.add(amount);
         plan.totalTokenStaked = plan.totalTokenStaked.add(amount);
+        emit AddStake(planIndex, msg.sender, amount);
         return addressToId[planIndex][msg.sender];
 
     }

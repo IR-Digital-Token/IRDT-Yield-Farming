@@ -129,7 +129,7 @@ module.exports.referral_test_cases = [
           {'is_stake': true,
            'referrer': 1,
            'stake_amount': 1000,
-           'time': 6110000000},
+           'time': 6000000000},
           {'is_stake': false,
            'time': 7000000000,
            'unstake_amount': {'1': 14.999999999999998, '2': 68.33333333333333},
