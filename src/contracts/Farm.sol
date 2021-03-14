@@ -1,99 +1,8 @@
 pragma solidity ^0.5.4;
 
-// import './Interfaces/IERC20.sol';
-
-// pragma solidity ^0.5.16;
-
-contract IERC20 {
-    function totalSupply() external view returns (uint256);
-
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
-
-    function balanceOf(address account) external view returns (uint256);
-
-    function transfer(address recipient, uint256 amount) external returns (bool);
-
-    function allowance(address owner, address spender) external view returns (uint256);
-
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-library SafeMath {
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        require(c >= a, "SafeMath: addition overflow");
-
-        return c;
-    }
-
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return sub(a, b, "SafeMath: subtraction overflow");
-    }
-
-
-    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b <= a, errorMessage);
-        uint256 c = a - b;
-
-        return c;
-    }
-
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-        if (a == 0) {
-            return 0;
-        }
-
-        uint256 c = a * b;
-        require(c / a == b, "SafeMath: multiplication overflow");
-
-        return c;
-    }
-
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        return div(a, b, "SafeMath: division by zero");
-    }
-
-    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b > 0, errorMessage);
-        uint256 c = a / b;
-        return c;
-    }
-}
-
-
-contract Ownable {
-    address private _owner;
-
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-    constructor () internal {
-        address msgSender = msg.sender;
-        _owner = msgSender;
-        emit OwnershipTransferred(address(0), msgSender);
-    }
-
-    function owner() public view returns (address) {
-        return _owner;
-    }
-
-    modifier onlyOwner() {
-        require(_owner == msg.sender, "Ownable: caller is not the owner");
-        _;
-    }
-
-    function transferOwnership(address newOwner) public onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
-    }
-}
-
+import './IERC20.sol';
+import './Ownable.sol';
+import './SafeMath.sol';
 
 contract Farm is Ownable {
     using SafeMath for uint256;
@@ -102,6 +11,7 @@ contract Farm is Ownable {
         uint256 startingIntegral;
         address referrer;
         uint256 tokenAmount;   
+        uint256 earningAmount;
     }
 
     struct Plan {
@@ -128,8 +38,8 @@ contract Farm is Ownable {
     Plan[] private plans;
 
     event AddPlan(address indexed stakingToken, address indexed rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent);
-    event Unstake(uint256 indexed planIndex, uint256 reward, uint256 referralReward);
-    event Stake(uint256 indexed planIndex, uint256 amount, uint256 referrerID);
+    event Unstake(uint256 indexed planIndex, address unStaker, uint256 reward, uint256 referralReward);
+    event Stake(uint256 indexed planIndex, address staker, uint256 amount, uint256 referrerID);
 
     constructor () public {
     }
@@ -168,17 +78,18 @@ contract Farm is Ownable {
     }
 
 
-    function stakeWithPermit(uint256 planIndex, uint256 amount, uint256 referrerID, uint deadlineRT, uint8 vRT, bytes32 rRT, bytes32 sRT) public returns(uint256 id) {
-        plans[planIndex].stakingToken.permit(msg.sender, address(this), amount, deadlineRT, vRT, rRT, sRT);
+    function stakeWithPermit(uint256 planIndex, uint256 amount, uint256 referrerID, uint256 deadlineRT, uint8 v, bytes32 r, bytes32 s) public returns(uint256 id) {
+        plans[planIndex].stakingToken.permit(msg.sender, address(this), amount, deadlineRT, v, r, s);
         return stake(planIndex, amount, referrerID);
     }
     
     function stake(uint256 planIndex, uint256 amount, uint256 referrerID) public returns(uint256 id) {
+        require(users[planIndex][msg.sender].tokenAmount == 0,"Reentrant is not allowed");
         Plan storage plan = plans[planIndex];
-        require(users[planIndex][msg.sender].tokenAmount == 0);
-        require(plan.idCounter > referrerID , "referrerID is not valid");
         require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
         require(block.timestamp > plan.startTime,"Too Early");
+        if(plan.idCounter >= referrerID)
+            referrerID = 1;
         plan.stakingToken.transferFrom(msg.sender, address(this), amount);
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
         plan.prevTimeStake = block.timestamp;
@@ -192,7 +103,7 @@ contract Farm is Ownable {
             plan.idCounter++;
         }
         plan.currentUserCount++;
-        emit Stake(planIndex, amount, referrerID);
+        emit Stake(planIndex, msg.sender, amount, referrerID);
         return(addressToId[planIndex][msg.sender]);
     }
  
@@ -222,7 +133,7 @@ contract Farm is Ownable {
         plan.stakingToken.transfer(msg.sender, user.tokenAmount);
         user.tokenAmount = 0;
         plan.currentUserCount--;
-        emit Unstake(planIndex, reward.div(1e18), referralReward.div(1e18));
+        emit Unstake(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
     }
 
     // Views

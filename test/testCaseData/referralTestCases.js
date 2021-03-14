@@ -13,7 +13,6 @@ module.exports.referral_test_cases = [
            'time': 150,
            'unstake_amount': {'1': 2000.0},
            'unstake_num': 1}]},
-
 {'duration': 100,
 'name': 'A Test With One Stoker & Delay',
 'referral_enable': true,
