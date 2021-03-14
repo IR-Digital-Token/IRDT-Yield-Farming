@@ -86,22 +86,26 @@ contract("TokenFarm", (accounts) => {
                             }
                             if(testCase.referral_enable){
                                 if(Object.keys(scene.unstake_amount).length >1){
+                                    unstakeAmountFuncValue.then(res=>{
                                     var c = 1;
                                     for(var key in scene.unstake_amount){
                                         console.log(scene.unstake_amount[key])
-                                        console.log(unstakeAmountFuncValue[c]/1e18)
+                                        console.log(res[c]/1e18)
 
-                                        assert.equal(checkvalue(scene.unstake_amount[key] - unstakeAmountFuncValue[c]/1e18),0)
+                                        assert.equal(checkvalue(scene.unstake_amount[key] - res[c]/1e18),0)
                                         c--;
-                                    }
+                                    }})
                                 }else{
-                                    for(var key in scene.unstake_amount){
-                                        console.log(scene.unstake_amount[key])
-                                        console.log(unstakeAmountFuncValue[0]/1e18)
-                                        console.log(unstakeAmountFuncValue[1]/1e18)
+                                    unstakeAmountFuncValue.then(res=>{
 
-                                        assert.equal(checkvalue(scene.unstake_amount[key] - unstakeAmountFuncValue[0]/1e18 - unstakeAmountFuncValue[1]/1e18),0)
-                                    }
+                                        for(var key in scene.unstake_amount){
+                                            console.log(scene.unstake_amount[key])
+                                            console.log(res[0]/1e18)
+                                            console.log(res[1]/1e18)
+
+                                            assert.equal(checkvalue(scene.unstake_amount[key] - res[0]/1e18 - res[1]/1e18),0)
+                                        }
+                                    })
                                 }
                                 
                                 // assert.equal(checkvalue(scene.unstake_amount[1] - unstakeAmountFuncValue['1']/1e18),0)
@@ -163,11 +167,11 @@ contract("TokenFarm", (accounts) => {
         })
     })
 
-    describe("Norm Scenarios Testing", testerFunc(norm_test_cases))
+    // describe("Norm Scenarios Testing", testerFunc(norm_test_cases))
 
     // describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
 
-    // describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
+    describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
 
     // describe("Referral Reenter Scenarios Testing", testerFunc(referral_reenter_test_cases))
 

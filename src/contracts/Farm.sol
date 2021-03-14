@@ -157,6 +157,8 @@ contract Farm is Ownable {
         calculateReward(planIndex);
 
         plan.remainingRewardAmount = plan.remainingRewardAmount.sub(user.earningAmount);
+        plan.tokenStaking = plan.tokenStaking.sub(user.tokenAmount);
+
         if(plan.referralEnable){
             referralReward = (user.earningAmount.mul(plan.referralPercent)).div(100);
             user.earningAmount = user.earningAmount.sub(referralReward);
@@ -225,9 +227,7 @@ contract Farm is Ownable {
 
         plan.prevTimeStake = plan.prevTimeStake.add(dur);
         uint256 reward = plan.integralOfRewardPerToken.sub(user.startingIntegral).mul(user.tokenAmount);
-
         user.earningAmount = user.earningAmount.add(reward);
-        
         user.startingIntegral = plan.integralOfRewardPerToken;
     }
 
