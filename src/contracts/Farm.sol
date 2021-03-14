@@ -66,6 +66,7 @@ contract Farm is Ownable {
             idCounter : 2,
             stakingTokenAddress : token,
             rewardTokenAddress : rewardToken,
+            tokenStaking : initialStakingAmount,
             stakingToken : IERC20(token),
             rewardToken : IERC20(rewardToken),
             remainingRewardAmount : rewardAmount.mul(1e18),
@@ -111,6 +112,7 @@ contract Farm is Ownable {
         plan.integralOfRewardPerToken = plan.integralOfRewardPerToken.add((block.timestamp.sub(plan.prevTimeStake)).mul(rewardPerToken(planIndex)));
         plan.prevTimeStake = block.timestamp;
         plan.totalTokenStaked = plan.totalTokenStaked.add(amount);
+        plan.tokenStaking = plan.tokenStaking.add(amount);
         address referrerAddr = idToAddress[planIndex][referrerID];
         User memory newUser = User(plan.integralOfRewardPerToken, referrerAddr, amount, 0);
         users[planIndex][msg.sender] = newUser;
@@ -142,7 +144,7 @@ contract Farm is Ownable {
             plan.currentUserCount++;
         }
         plan.stakingToken.transferFrom(msg.sender, address(this), amount);
-        user.tokenAmount = user.tokenAmount.add(amout); 
+        user.tokenAmount = user.tokenAmount.add(amount); 
         plan.tokenStaking = plan.tokenStaking.add(amount);
         plan.totalTokenStaked = plan.totalTokenStaked.add(amount);
         return addressToId[planIndex][msg.sender];
@@ -168,7 +170,7 @@ contract Farm is Ownable {
         amount = user.tokenAmount;
         user.tokenAmount = 0;
         plan.currentUserCount--;
-        emit Unstake(planIndex, msg.sender, user.tokenAmount);
+        emit Unstake(planIndex, msg.sender, amount);
         emit ClaimReward(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
         emit UnstakeAndClaimRewards(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18), amount);
 
@@ -257,13 +259,13 @@ contract Farm is Ownable {
         return plan.tokenStaking;
     }
 
-    function getUserData(uint256 planIndex, address account) public view returns (uint256 stakingAmount, uint256 rewardAmount, uint256 totalTokenStaked) {
+    function getUserData(uint256 planIndex, address account) public view returns (uint256 stakingAmount, uint256 rewardAmount) {
         User memory user = users[planIndex][account];
         require(user.tokenAmount > 0);
             
         (uint256 integralOfRewardPerToken,) = getIntegral(planIndex);
         uint256 reward = (integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
-        return (user.tokenAmount, reward, user.totalTokenStaked);
+        return (user.tokenAmount, reward);
     }
 
 
