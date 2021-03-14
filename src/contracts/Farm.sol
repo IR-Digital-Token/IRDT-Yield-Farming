@@ -14,6 +14,12 @@ contract Farm is Ownable {
         uint256 earningAmount;
     }
 
+    struct StakeHistory {
+        uint256 joinedTime;
+        uint256 joinedAmount;
+        uint256 planIndex;
+    }
+
     struct Plan {
         address stakingTokenAddress;
         address rewardTokenAddress;
@@ -35,6 +41,8 @@ contract Farm is Ownable {
     mapping(uint256 => mapping(address => uint256)) addressToId;
     mapping(uint256 => mapping(uint256 => address)) idToAddress;
     mapping(uint256 => mapping(address => User)) users;
+    mapping(address => StakeHistory[]) history;
+
     Plan[] private plans;
 
     event AddPlan(address indexed stakingToken, address indexed rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent);
@@ -78,6 +86,8 @@ contract Farm is Ownable {
         User memory newUser = User(0, msg.sender, initialStakingAmount, 0);
         users[plans.length][msg.sender] = newUser;
         plans.push(plan);
+        history[msg.sender].push(StakeHistory(startTime, initialStakingAmount, plans.length - 1));
+        emit Stake(plans.length - 1, msg.sender, initialStakingAmount, 1);
         emit AddPlan(token, rewardToken, rewardAmount, startTime, duration, referralEnable, referralPercent);
     }
 
@@ -108,6 +118,8 @@ contract Farm is Ownable {
         plan.idCounter++;
         
         plan.currentUserCount++;
+        history[msg.sender].push(StakeHistory(block.timestamp, amount, planIndex));
+
         emit Stake(planIndex, msg.sender, amount, referrerID);
         return(addressToId[planIndex][msg.sender]);
     }
@@ -128,6 +140,7 @@ contract Farm is Ownable {
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0,"You don't have any stake amount");
         calculateReward(planIndex);
+        
         if(plan.referralEnable){
             referralReward = (user.earningAmount.mul(plan.referralPercent)).div(100);
             user.earningAmount = user.earningAmount.sub(referralReward);
@@ -191,8 +204,7 @@ contract Farm is Ownable {
         (plan.integralOfRewardPerToken, dur) = getIntegral(planIndex);
 
         plan.prevTimeStake = plan.prevTimeStake.add(dur);
-
-        plan.totalTokenStaked = plan.totalTokenStaked.sub(user.tokenAmount);
+        plan.totalTokenStaked = plan.totalTokenStaked.sub(user.tokenAmount);    
         uint256 reward = plan.integralOfRewardPerToken.sub(user.startingIntegral).mul(user.tokenAmount);
 
         plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);

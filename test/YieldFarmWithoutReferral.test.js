@@ -106,12 +106,16 @@ contract("TokenFarm", (accounts) => {
                                 
                                 // assert.equal(checkvalue(scene.unstake_amount[1] - unstakeAmountFuncValue['1']/1e18),0)
                             } else {
-                                assert.equal(checkvalue(scene.unstake_amount-unstakeAmountFuncValue['0']/1e18),0)
+                                console.log("jii")
+                                unstakeAmountFuncValue.then(res=>{
+                                    assert.equal(checkvalue(scene.unstake_amount - res['0']/1e18),0)
 
-                                assert.equal(checkvalue(scene.unstake_amount-unstakeAmountGetter['1']/1e18),0)
+                                })
+
+                                console.log(unstakeAmountFuncValue['0'])
+
+                                // assert.equal(checkvalue(scene.unstake_amount - unstakeAmountGetter['1']/1e18),0)
                             }
-                            
-
                         }
                     }
                 }
@@ -159,11 +163,11 @@ contract("TokenFarm", (accounts) => {
         })
     })
 
-    // describe("Norm Scenarios Testing", testerFunc(norm_test_cases))
+    describe("Norm Scenarios Testing", testerFunc(norm_test_cases))
 
-    describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
+    // describe("Reenter Scenarios Testing", testerFunc(reenter_test_cases))
 
-    describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
+    // describe("Referral Scenarios Testing", testerFunc(referral_test_cases))
 
     // describe("Referral Reenter Scenarios Testing", testerFunc(referral_reenter_test_cases))
 
