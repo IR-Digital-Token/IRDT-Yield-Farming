@@ -74,7 +74,8 @@ contract Farm is Ownable {
         idToAddress[plans.length][1] = msg.sender;
         plan.rewardToken.transferFrom(msg.sender, address(this), rewardAmount);
         plan.stakingToken.transferFrom(msg.sender, address(this), initialStakingAmount);
-        User memory newUser = User(0, msg.sender, initialStakingAmount);
+
+        User memory newUser = User(0, msg.sender, initialStakingAmount, 0);
         users[plans.length][msg.sender] = newUser;
         plans.push(plan);
         emit AddPlan(token, rewardToken, rewardAmount, startTime, duration, referralEnable, referralPercent);
@@ -99,7 +100,7 @@ contract Farm is Ownable {
         plan.prevTimeStake = block.timestamp;
         plan.totalTokenStaked = plan.totalTokenStaked.add(amount);
         address referrerAddr = idToAddress[planIndex][referrerID];
-        User memory newUser = User(plan.integralOfRewardPerToken, referrerAddr, amount);
+        User memory newUser = User(plan.integralOfRewardPerToken, referrerAddr, amount, 0);
         users[planIndex][msg.sender] = newUser;
        
         addressToId[planIndex][msg.sender] = plan.idCounter;
@@ -115,7 +116,6 @@ contract Farm is Ownable {
         Plan storage plan = plans[planIndex];
         require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
         require(block.timestamp > plan.startTime,"Too Early");
-        User storage user = users[planIndex][msg.sender];
         require(users[planIndex][msg.sender].referrer != address(0),"First stake then add");
         calculateReward(planIndex);
         plan.stakingToken.transferFrom(msg.sender, address(this), amount);
