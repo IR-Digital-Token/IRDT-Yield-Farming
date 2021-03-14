@@ -216,7 +216,7 @@ contract Farm is Ownable {
     //private
     function calculateReward(uint256 planIndex) private{
         Plan storage plan = plans[planIndex];
-        require(block.timestamp > plan.startTime,"Too Early");
+        require(block.timestamp >= plan.startTime,"Too Early");
         User storage user = users[planIndex][msg.sender];
         if(user.tokenAmount == 0){
             return ;
