@@ -110,6 +110,11 @@ contract Farm is Ownable {
         emit Stake(planIndex, msg.sender, amount, referrerID);
         return(addressToId[planIndex][msg.sender]);
     }
+
+    function addStakeWithPermit(uint256 planIndex, uint256 amount, uint256 deadlineRT, uint8 v, bytes32 r, bytes32 s) public returns(uint256 id) {
+        plans[planIndex].stakingToken.permit(msg.sender, address(this), amount, deadlineRT, v, r, s);
+        return addStake(planIndex, amount);
+    }
  
     function addStake(uint256 planIndex, uint256 amount) public returns(uint256) {
         Plan storage plan = plans[planIndex];
