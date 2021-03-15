@@ -4,6 +4,10 @@ import './IERC20.sol';
 import './Ownable.sol';
 import './SafeMath.sol';
 
+/**
+ * Website: IRDT.io
+ **/
+
 contract Farm is Ownable {
     using SafeMath for uint256;
 
@@ -52,16 +56,16 @@ contract Farm is Ownable {
     event Unstake(uint256 indexed planIndex, address unStaker, uint256 amount);
     event ClaimReward(uint256 indexed planIndex, address unStaker, uint256 reward, uint256 referralReward);
     event UnstakeAndClaimRewards(uint256 indexed planIndex, address unStaker, uint256 reward, uint256 referralReward, uint256 amount);
-
     event Stake(uint256 indexed planIndex, address staker, uint256 amount, uint256 referrerID);
     event AddStake(uint256 indexed planIndex, address staker, uint256 amount);
-
-    constructor () public {
-    }
-
-
     
-    // Mutative
+    /**
+     * Add new staking plan 
+     *
+     * Requirements:
+     *
+     * - caller should only be owner
+     */
     function addPlan(address token, address rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent, uint256 initialStakingAmount) public onlyOwner {
         Plan memory plan = Plan({
             integralOfRewardPerToken  : 0,
@@ -96,18 +100,27 @@ contract Farm is Ownable {
         emit AddPlan(token, rewardToken, rewardAmount, startTime, duration, referralEnable, referralPercent);
     }
 
-
+    /**
+     * Stake With Permit in given plan using EIP-2612 permit function
+     */
     function stakeWithPermit(uint256 planIndex, uint256 amount, uint256 referrerID, uint256 deadlineRT, uint8 v, bytes32 r, bytes32 s) public returns(uint256 id) {
         plans[planIndex].stakingToken.permit(msg.sender, address(this), amount, deadlineRT, v, r, s);
         return stake(planIndex, amount, referrerID);
     }
-    
+
+    /**
+     * Stake in given plan using transferFrom function in stakingToken
+     *
+     * Requirements:
+     *
+     * - caller should approve amount before calling this contract
+     */
     function stake(uint256 planIndex, uint256 amount, uint256 referrerID) public returns(uint256 id) {
         require(users[planIndex][msg.sender].referrer == address(0),"Reentrant is not allowed, use addStake function");
         Plan storage plan = plans[planIndex];
         require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
         require(block.timestamp > plan.startTime,"Too Early");
-        if(plan.idCounter >= referrerID)
+        if(plan.idCounter >= referrerID || referrerID == 0)
             referrerID = 1;
 
         plan.stakingToken.transferFrom(msg.sender, address(this), amount);
@@ -130,11 +143,21 @@ contract Farm is Ownable {
         return(addressToId[planIndex][msg.sender]);
     }
 
+    /**
+     * Add to Stake With Permit in given plan using EIP-2612 permit function
+     */
     function addStakeWithPermit(uint256 planIndex, uint256 amount, uint256 deadlineRT, uint8 v, bytes32 r, bytes32 s) public returns(uint256 id) {
         plans[planIndex].stakingToken.permit(msg.sender, address(this), amount, deadlineRT, v, r, s);
         return addStake(planIndex, amount);
     }
- 
+    
+    /**
+     * Add Stake in given plan using transferFrom function in stakingToken
+     *
+     * Requirements:
+     *
+     * - caller should approve amount before calling this contract
+     */
     function addStake(uint256 planIndex, uint256 amount) public returns(uint256) {
         Plan storage plan = plans[planIndex];
         require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
@@ -155,6 +178,10 @@ contract Farm is Ownable {
         return addressToId[planIndex][msg.sender];
 
     }
+
+    /**
+     * UnStake And Claim Rewards from given plan
+     */
     function unstakeAndClaimRewards(uint256 planIndex, uint256 unstakeAmount) public returns(uint256 reward, uint256 referralReward, uint256 amount) {
         Plan storage plan = plans[planIndex]; 
         User storage user = users[planIndex][msg.sender];
@@ -187,6 +214,10 @@ contract Farm is Ownable {
 
     }
 
+    /**
+     * UnStake from given plan
+     * You can still withdraw your reward later using claimReward function
+     */
     function unStake(uint256 planIndex, uint256 unstakeAmount) public returns(uint256 amount) {
         Plan storage plan = plans[planIndex];
         User storage user = users[planIndex][msg.sender];
@@ -207,7 +238,9 @@ contract Farm is Ownable {
 
     }
     
-
+    /**
+     * Cliam reward from given plan
+     */
     function claimRewards(uint256 planIndex) public returns(uint256 reward, uint256 referralReward) {
         Plan storage plan = plans[planIndex];
         User storage user = users[planIndex][msg.sender];
@@ -225,8 +258,8 @@ contract Farm is Ownable {
         emit ClaimReward(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
     }
 
-    //private
-    function calculateReward(uint256 planIndex) private{
+    // private util function to calculate reward
+    function calculateReward(uint256 planIndex) private {
         Plan storage plan = plans[planIndex];
         require(block.timestamp >= plan.startTime,"Too Early");
         User storage user = users[planIndex][msg.sender];
@@ -243,12 +276,13 @@ contract Farm is Ownable {
         user.startingIntegral = plan.integralOfRewardPerToken;
     }
 
-    // Views
+    // View function to retrieve plan data
     function getPlanData(uint256 planIndex) view public returns (address stakingTokenAddress, address rewardTokenAddress, uint256 totalTokenStaked ,uint256 tokenStaking ,uint256 rewardAmount, uint256 remainingRewardAmount, bool referralEnable, uint256 referralPercent, uint256 startTime, uint256 duration, uint256 currentUserCount, uint256 idCounter){
         Plan memory plan = plans[planIndex];
         return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.totalTokenStaked, plan.tokenStaking, plan.rewardAmount, plan.remainingRewardAmount, plan.referralEnable, plan.referralPercent, plan.startTime, plan.duration, plan.currentUserCount, plan.idCounter);
     }
 
+    // View function to state of staking and rewarding status
     function getIntegral(uint256 planIndex) public view returns (uint256, uint256) {
         Plan memory plan = plans[planIndex];
         if (block.timestamp < plan.startTime)
@@ -261,16 +295,19 @@ contract Farm is Ownable {
         }
     }
 
+    // View function to get reward per each staking token
     function rewardPerToken(uint256 planIndex) view public returns (uint256) {
         Plan memory plan = plans[planIndex];
         return (plan.rewardAmount.mul(1e18).div(plan.tokenStaking).div(plan.duration));
     }
 
+    // View function to get amount of tokens staked and not unstaked
     function totalSupply(uint256 planIndex) public view returns (uint256) {
         Plan memory plan = plans[planIndex];
         return plan.tokenStaking;
     }
 
+    // View function to retrieve user data
     function getUserData(uint256 planIndex, address account) public view returns (uint256 stakingAmount, uint256 rewardAmount) {
         User memory user = users[planIndex][account];
         if (user.tokenAmount == 0) {
@@ -282,7 +319,7 @@ contract Farm is Ownable {
         return (user.tokenAmount, reward);
     }
 
-
+    // View function to retrieve user id in the given plan
     function getID(uint256 planIndex, address addr) view public returns (uint256 id) {
         return addressToId[planIndex][addr];
     }
