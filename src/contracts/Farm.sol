@@ -18,6 +18,7 @@ contract Farm is Ownable {
         uint256 joinedTime;
         uint256 joinedAmount;
         uint256 planIndex;
+        bool isStake;
     }
 
     struct Plan {
@@ -43,7 +44,7 @@ contract Farm is Ownable {
     mapping(uint256 => mapping(address => uint256)) addressToId;
     mapping(uint256 => mapping(uint256 => address)) idToAddress;
     mapping(uint256 => mapping(address => User)) users;
-    mapping(address => StakeHistory[]) history;
+    mapping(address => StakeHistory[]) public history;
 
     Plan[] private plans;
 
@@ -90,7 +91,7 @@ contract Farm is Ownable {
         User memory newUser = User(0, msg.sender, initialStakingAmount, 0);
         users[plans.length][msg.sender] = newUser;
         plans.push(plan);
-        history[msg.sender].push(StakeHistory(startTime, initialStakingAmount, plans.length - 1));
+        history[msg.sender].push(StakeHistory(startTime, initialStakingAmount, plans.length - 1,true));
         emit Stake(plans.length - 1, msg.sender, initialStakingAmount, 1);
         emit AddPlan(token, rewardToken, rewardAmount, startTime, duration, referralEnable, referralPercent);
     }
@@ -123,7 +124,7 @@ contract Farm is Ownable {
         plan.idCounter++;
         
         plan.currentUserCount++;
-        history[msg.sender].push(StakeHistory(block.timestamp, amount, planIndex));
+        history[msg.sender].push(StakeHistory(block.timestamp, amount, planIndex,true));
 
         emit Stake(planIndex, msg.sender, amount, referrerID);
         return(addressToId[planIndex][msg.sender]);
@@ -149,6 +150,8 @@ contract Farm is Ownable {
         plan.tokenStaking = plan.tokenStaking.add(amount);
         plan.totalTokenStaked = plan.totalTokenStaked.add(amount);
         emit AddStake(planIndex, msg.sender, amount);
+        history[msg.sender].push(StakeHistory(block.timestamp, amount, planIndex,true));
+
         return addressToId[planIndex][msg.sender];
 
     }
@@ -178,8 +181,8 @@ contract Farm is Ownable {
         if (user.tokenAmount == 0) {
             plan.currentUserCount--;
         }
-        emit Unstake(planIndex, msg.sender, amount);
-        emit ClaimReward(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
+        
+        history[msg.sender].push(StakeHistory(block.timestamp, unstakeAmount, planIndex,false));
         emit UnstakeAndClaimRewards(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18), amount);
 
     }
@@ -197,7 +200,8 @@ contract Farm is Ownable {
         if (user.tokenAmount == 0) {
             plan.currentUserCount--;
         }
-        
+        history[msg.sender].push(StakeHistory(block.timestamp, unstakeAmount, planIndex,false));
+
         emit Unstake(planIndex, msg.sender, unstakeAmount);
         return unstakeAmount;
 
