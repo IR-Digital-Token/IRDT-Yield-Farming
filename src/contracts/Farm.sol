@@ -116,6 +116,7 @@ contract Farm is Ownable {
      * - caller should approve amount before calling this contract
      */
     function stake(uint256 planIndex, uint256 amount, uint256 referrerID) public returns(uint256 id) {
+        require(amount > 0, "Cannot stake 0");
         require(users[planIndex][msg.sender].referrer == address(0),"Reentrant is not allowed, use addStake function");
         Plan storage plan = plans[planIndex];
         require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
@@ -147,6 +148,7 @@ contract Farm is Ownable {
      * Add to Stake With Permit in given plan using EIP-2612 permit function
      */
     function addStakeWithPermit(uint256 planIndex, uint256 amount, uint256 deadlineRT, uint8 v, bytes32 r, bytes32 s) public returns(uint256 id) {
+        require(amount > 0, "Cannot stake 0");
         plans[planIndex].stakingToken.permit(msg.sender, address(this), amount, deadlineRT, v, r, s);
         return addStake(planIndex, amount);
     }
@@ -159,6 +161,7 @@ contract Farm is Ownable {
      * - caller should approve amount before calling this contract
      */
     function addStake(uint256 planIndex, uint256 amount) public returns(uint256) {
+        require(amount > 0, "Cannot stake 0");
         Plan storage plan = plans[planIndex];
         require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
         require(block.timestamp > plan.startTime,"Too Early");
@@ -183,26 +186,30 @@ contract Farm is Ownable {
      * UnStake And Claim Rewards from given plan
      */
     function unstakeAndClaimRewards(uint256 planIndex, uint256 unstakeAmount) public returns(uint256 reward, uint256 referralReward, uint256 amount) {
+        require(unstakeAmount > 0, "Cannot unstake 0");
         Plan storage plan = plans[planIndex]; 
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0,"You don't have any stake amount");
         require(user.tokenAmount >= unstakeAmount,"More than you staking amount");
 
         calculateReward(planIndex);
-
-        plan.remainingRewardAmount = plan.remainingRewardAmount.sub(user.earningAmount);
         plan.tokenStaking = plan.tokenStaking.sub(unstakeAmount);
         user.tokenAmount = user.tokenAmount.sub(unstakeAmount);
+        if(user.earningAmount > 0){
+            plan.remainingRewardAmount = plan.remainingRewardAmount.sub(user.earningAmount);
+           
 
-        if(plan.referralEnable){
-            referralReward = (user.earningAmount.mul(plan.referralPercent)).div(100);
-            user.earningAmount = user.earningAmount.sub(referralReward);
-            plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
+            if(plan.referralEnable){
+                referralReward = (user.earningAmount.mul(plan.referralPercent)).div(100);
+                user.earningAmount = user.earningAmount.sub(referralReward);
+                plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
+            }
+            reward = user.earningAmount;
+            user.earningAmount = 0;
+
+            plan.rewardToken.transfer(msg.sender, reward.div(1e18));
         }
-        reward = user.earningAmount;
-        user.earningAmount = 0;
-
-        plan.rewardToken.transfer(msg.sender, reward.div(1e18));
+        
         plan.stakingToken.transfer(msg.sender, unstakeAmount);
         amount = unstakeAmount;
         if (user.tokenAmount == 0) {
@@ -219,6 +226,7 @@ contract Farm is Ownable {
      * You can still withdraw your reward later using claimReward function
      */
     function unStake(uint256 planIndex, uint256 unstakeAmount) public returns(uint256 amount) {
+        require(unstakeAmount > 0, "Cannot unstake 0");
         Plan storage plan = plans[planIndex];
         User storage user = users[planIndex][msg.sender];
         require(user.tokenAmount > 0,"You don't have any stake amount");
@@ -246,16 +254,17 @@ contract Farm is Ownable {
         User storage user = users[planIndex][msg.sender];
         calculateReward(planIndex);
         reward = user.earningAmount;
-        plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
-        if(plan.referralEnable){
-            referralReward = (reward.mul(plan.referralPercent)).div(100);
-            reward = reward.sub(referralReward);
-            plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
+        if(reward > 0){
+            plan.remainingRewardAmount = plan.remainingRewardAmount.sub(reward);
+            if(plan.referralEnable){
+                referralReward = (reward.mul(plan.referralPercent)).div(100);
+                reward = reward.sub(referralReward);
+                plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
+            }
+            user.earningAmount = 0;
+            plan.rewardToken.transfer(msg.sender, reward.div(1e18));
+            emit ClaimReward(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
         }
-        user.earningAmount = 0;
-        plan.rewardToken.transfer(msg.sender, reward.div(1e18));
-        
-        emit ClaimReward(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
     }
 
     // private util function to calculate reward
