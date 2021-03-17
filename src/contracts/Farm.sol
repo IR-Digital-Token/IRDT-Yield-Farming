@@ -53,11 +53,11 @@ contract Farm is Ownable {
     Plan[] private plans;
 
     event AddPlan(address indexed stakingToken, address indexed rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent);
-    event Unstake(uint256 indexed planIndex, address unStaker, uint256 amount);
-    event ClaimReward(uint256 indexed planIndex, address unStaker, uint256 reward, uint256 referralReward);
-    event UnstakeAndClaimRewards(uint256 indexed planIndex, address unStaker, uint256 reward, uint256 referralReward, uint256 amount);
-    event Stake(uint256 indexed planIndex, address staker, uint256 amount, uint256 referrerID);
-    event AddStake(uint256 indexed planIndex, address staker, uint256 amount);
+    event Unstake(uint256 indexed planIndex, address indexed unStaker, uint256 amount);
+    event ClaimReward(uint256 indexed planIndex, address indexed unStaker, uint256 reward, uint256 referralReward);
+    event UnstakeAndClaimRewards(uint256 indexed planIndex, address indexed unStaker, uint256 reward, uint256 referralReward, uint256 amount);
+    event Stake(uint256 indexed planIndex, address indexed staker, uint256 amount, uint256 referrerID);
+    event AddStake(uint256 indexed planIndex, address indexed staker, uint256 amount);
     
     /**
      * Add new staking plan 
@@ -75,7 +75,7 @@ contract Farm is Ownable {
             tokenStaking : initialStakingAmount,
             stakingToken : IERC20(token),
             rewardToken : IERC20(rewardToken),
-            remainingRewardAmount : rewardAmount.mul(1e18),
+            remainingRewardAmount : rewardAmount.mul(1e24),
             rewardAmount : rewardAmount,
             duration : duration,
             referralEnable : referralEnable,
@@ -121,7 +121,7 @@ contract Farm is Ownable {
         Plan storage plan = plans[planIndex];
         require(block.timestamp < plan.startTime.add(plan.duration),"Too Late");
         require(block.timestamp > plan.startTime,"Too Early");
-        if(plan.idCounter >= referrerID || referrerID == 0)
+        if(plan.idCounter <= referrerID || referrerID == 0)
             referrerID = 1;
 
         plan.stakingToken.transferFrom(msg.sender, address(this), amount);
@@ -202,12 +202,12 @@ contract Farm is Ownable {
             if(plan.referralEnable){
                 referralReward = (user.earningAmount.mul(plan.referralPercent)).div(100);
                 user.earningAmount = user.earningAmount.sub(referralReward);
-                plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
+                plan.rewardToken.transfer(user.referrer, referralReward.div(1e24));
             }
             reward = user.earningAmount;
             user.earningAmount = 0;
 
-            plan.rewardToken.transfer(msg.sender, reward.div(1e18));
+            plan.rewardToken.transfer(msg.sender, reward.div(1e24));
         }
         
         plan.stakingToken.transfer(msg.sender, unstakeAmount);
@@ -217,7 +217,7 @@ contract Farm is Ownable {
         }
         
         history[msg.sender].push(StakeHistory(block.timestamp, unstakeAmount, planIndex,false));
-        emit UnstakeAndClaimRewards(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18), amount);
+        emit UnstakeAndClaimRewards(planIndex, msg.sender, reward.div(1e24), referralReward.div(1e24), amount);
 
     }
 
@@ -259,11 +259,11 @@ contract Farm is Ownable {
             if(plan.referralEnable){
                 referralReward = (reward.mul(plan.referralPercent)).div(100);
                 reward = reward.sub(referralReward);
-                plan.rewardToken.transfer(user.referrer, referralReward.div(1e18));
+                plan.rewardToken.transfer(user.referrer, referralReward.div(1e24));
             }
             user.earningAmount = 0;
-            plan.rewardToken.transfer(msg.sender, reward.div(1e18));
-            emit ClaimReward(planIndex, msg.sender, reward.div(1e18), referralReward.div(1e18));
+            plan.rewardToken.transfer(msg.sender, reward.div(1e24));
+            emit ClaimReward(planIndex, msg.sender, reward.div(1e24), referralReward.div(1e24));
         }
     }
 
@@ -307,7 +307,7 @@ contract Farm is Ownable {
     // View function to get reward per each staking token
     function rewardPerToken(uint256 planIndex) view public returns (uint256) {
         Plan memory plan = plans[planIndex];
-        return (plan.rewardAmount.mul(1e18).div(plan.tokenStaking).div(plan.duration));
+        return (plan.rewardAmount.mul(1e24).div(plan.tokenStaking).div(plan.duration));
     }
 
     // View function to get amount of tokens staked and not unstaked

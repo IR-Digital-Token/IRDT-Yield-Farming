@@ -78,7 +78,7 @@ contract("TokenFarm", (accounts) => {
                             await unstakeAmountFuncValue
                             await unstakeAmountFunc
                             console.log("shiii")
-                            console.log(unstakeAmountFuncValue/1e18);
+                            console.log(unstakeAmountFuncValue/1e24);
                             function checkvalue(val){
                                 if(Math.abs(val)<0.01)
                                     return 0
@@ -90,9 +90,9 @@ contract("TokenFarm", (accounts) => {
                                     var c = 1;
                                     for(var key in scene.unstake_amount){
                                         console.log(scene.unstake_amount[key])
-                                        console.log(res[c]/1e18)
+                                        console.log(res[c]/1e24)
 
-                                        assert.equal(checkvalue(scene.unstake_amount[key] - res[c]/1e18),0)
+                                        assert.equal(checkvalue(scene.unstake_amount[key] - res[c]/1e24),0)
                                         c--;
                                     }})
                                 }else{
@@ -100,10 +100,10 @@ contract("TokenFarm", (accounts) => {
 
                                         for(var key in scene.unstake_amount){
                                             console.log(scene.unstake_amount[key])
-                                            console.log(res[0]/1e18)
-                                            console.log(res[1]/1e18)
+                                            console.log(res[0]/1e24)
+                                            console.log(res[1]/1e24)
 
-                                            assert.equal(checkvalue(scene.unstake_amount[key] - res[0]/1e18 - res[1]/1e18),0)
+                                            assert.equal(checkvalue(scene.unstake_amount[key] - res[0]/1e24 - res[1]/1e24),0)
                                         }
                                     })
                                 }
@@ -112,7 +112,7 @@ contract("TokenFarm", (accounts) => {
                             } else {
                                 console.log("jii")
                                 unstakeAmountFuncValue.then(res=>{
-                                    assert.equal(checkvalue(scene.unstake_amount - res['0']/1e18),0)
+                                    assert.equal(checkvalue(scene.unstake_amount - res['0']/1e24),0)
 
                                 })
 
