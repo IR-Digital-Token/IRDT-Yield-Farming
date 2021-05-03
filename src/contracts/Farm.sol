@@ -50,7 +50,7 @@ contract Farm is Ownable {
     mapping(uint256 => mapping(address => User)) users;
     mapping(address => StakeHistory[]) public history;
 
-    Plan[] private plans;
+    Plan[] plans;
 
     event AddPlan(address indexed stakingToken, address indexed rewardToken, uint256 rewardAmount, uint256 startTime, uint256 duration, bool referralEnable, uint256 referralPercent);
     event Unstake(uint256 indexed planIndex, address indexed unStaker, uint256 amount);
@@ -286,9 +286,15 @@ contract Farm is Ownable {
     }
 
     // View function to retrieve plan data
-    function getPlanData(uint256 planIndex) view public returns (address stakingTokenAddress, address rewardTokenAddress, uint256 totalTokenStaked ,uint256 tokenStaking ,uint256 rewardAmount, uint256 remainingRewardAmount, bool referralEnable, uint256 referralPercent, uint256 startTime, uint256 duration, uint256 currentUserCount, uint256 idCounter){
+    function getPlanConsts(uint256 planIndex) view public returns (address stakingTokenAddress, address rewardTokenAddress, uint256 rewardAmount, bool referralEnable, uint256 referralPercent, uint256 startTime, uint256 duration){
         Plan memory plan = plans[planIndex];
-        return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.totalTokenStaked, plan.tokenStaking, plan.rewardAmount, plan.remainingRewardAmount, plan.referralEnable, plan.referralPercent, plan.startTime, plan.duration, plan.currentUserCount, plan.idCounter);
+        return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.rewardAmount, plan.referralEnable, plan.referralPercent, plan.startTime, plan.duration);
+    }
+
+    // View function to retrieve plan data
+    function getPlanData(uint256 planIndex) view public returns (uint256 totalTokenStaked ,uint256 tokenStaking , uint256 remainingRewardAmount, uint256 currentUserCount, uint256 idCounter, uint256 integralOfRewardPerToken, uint256 prevTimeStake){
+        Plan memory plan = plans[planIndex];
+        return (plan.totalTokenStaked, plan.tokenStaking, plan.remainingRewardAmount, plan.currentUserCount, plan.idCounter, plan.integralOfRewardPerToken, plan.prevTimeStake);
     }
 
     // View function to state of staking and rewarding status
@@ -317,15 +323,15 @@ contract Farm is Ownable {
     }
 
     // View function to retrieve user data
-    function getUserData(uint256 planIndex, address account) public view returns (uint256 stakingAmount, uint256 rewardAmount) {
+    function getUserData(uint256 planIndex, address account) public view returns (uint256 stakingAmount,address referrer, uint256 earningAmount, uint256 rewardAmount, uint256 startingIntegral) {
         User memory user = users[planIndex][account];
-        if (user.tokenAmount == 0) {
-            return (0, 0);
+        uint256 reward = 0;
+        if (user.tokenAmount != 0) {
+            (uint256 integralOfRewardPerToken,) = getIntegral(planIndex);
+            reward = (integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
         }
-            
-        (uint256 integralOfRewardPerToken,) = getIntegral(planIndex);
-        uint256 reward = (integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
-        return (user.tokenAmount, reward);
+        
+        return (user.tokenAmount,user.referrer ,user.earningAmount, reward.add(user.earningAmount), user.startingIntegral);
     }
 
     // View function to retrieve user id in the given plan
