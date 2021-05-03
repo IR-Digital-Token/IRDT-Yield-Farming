@@ -286,9 +286,15 @@ contract Farm is Ownable {
     }
 
     // View function to retrieve plan data
-    function getPlanData(uint256 planIndex) view public returns (address stakingTokenAddress, address rewardTokenAddress, uint256 totalTokenStaked ,uint256 tokenStaking ,uint256 rewardAmount, uint256 remainingRewardAmount, bool referralEnable, uint256 referralPercent, uint256 startTime, uint256 duration, uint256 currentUserCount, uint256 idCounter, uint256 integralOfRewardPerToken, uint256 prevTimeStake){
+    function getPlanConsts(uint256 planIndex) view public returns (address stakingTokenAddress, address rewardTokenAddress, uint256 rewardAmount, bool referralEnable, uint256 referralPercent, uint256 startTime, uint256 duration){
         Plan memory plan = plans[planIndex];
-        return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.totalTokenStaked, plan.tokenStaking, plan.rewardAmount, plan.remainingRewardAmount, plan.referralEnable, plan.referralPercent, plan.startTime, plan.duration, plan.currentUserCount, plan.idCounter, plan.integralOfRewardPerToken, plan.prevTimeStake);
+        return (plan.stakingTokenAddress, plan.rewardTokenAddress, plan.rewardAmount, plan.referralEnable, plan.referralPercent, plan.startTime, plan.duration);
+    }
+
+    // View function to retrieve plan data
+    function getPlanData(uint256 planIndex) view public returns (uint256 totalTokenStaked ,uint256 tokenStaking , uint256 remainingRewardAmount, uint256 currentUserCount, uint256 idCounter, uint256 integralOfRewardPerToken, uint256 prevTimeStake){
+        Plan memory plan = plans[planIndex];
+        return (plan.totalTokenStaked, plan.tokenStaking, plan.remainingRewardAmount, plan.currentUserCount, plan.idCounter, plan.integralOfRewardPerToken, plan.prevTimeStake);
     }
 
     // View function to state of staking and rewarding status
@@ -320,7 +326,7 @@ contract Farm is Ownable {
     function getUserData(uint256 planIndex, address account) public view returns (uint256 stakingAmount,address referrer, uint256 earningAmount, uint256 rewardAmount, uint256 startingIntegral) {
         User memory user = users[planIndex][account];
         if (user.tokenAmount == 0) {
-            return (0, 0);
+            return (0,address(0),0,0, 0);
         }
             
         (uint256 integralOfRewardPerToken,) = getIntegral(planIndex);
