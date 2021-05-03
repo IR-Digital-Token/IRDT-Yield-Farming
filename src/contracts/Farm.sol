@@ -325,13 +325,13 @@ contract Farm is Ownable {
     // View function to retrieve user data
     function getUserData(uint256 planIndex, address account) public view returns (uint256 stakingAmount,address referrer, uint256 earningAmount, uint256 rewardAmount, uint256 startingIntegral) {
         User memory user = users[planIndex][account];
-        if (user.tokenAmount == 0) {
-            return (0,address(0),0,0, 0);
+        uint256 reward = 0;
+        if (user.tokenAmount != 0) {
+            (uint256 integralOfRewardPerToken,) = getIntegral(planIndex);
+            reward = (integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
         }
-            
-        (uint256 integralOfRewardPerToken,) = getIntegral(planIndex);
-        uint256 reward = (integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
-        return (user.tokenAmount,user.referrer ,user.earningAmount, reward + user.earningAmount, user.startingIntegral);
+        
+        return (user.tokenAmount,user.referrer ,user.earningAmount, reward.add(user.earningAmount), user.startingIntegral);
     }
 
     // View function to retrieve user id in the given plan
