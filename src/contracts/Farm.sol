@@ -325,7 +325,7 @@ contract Farm is Ownable {
             
         (uint256 integralOfRewardPerToken,) = getIntegral(planIndex);
         uint256 reward = (integralOfRewardPerToken.sub(user.startingIntegral)).mul(user.tokenAmount);
-        return (user.tokenAmount, user.earningAmount, reward + user.earningAmount, user.startingIntegral);
+        return (user.tokenAmount,user.referrer ,user.earningAmount, reward + user.earningAmount, user.startingIntegral);
     }
 
     // View function to retrieve user id in the given plan
